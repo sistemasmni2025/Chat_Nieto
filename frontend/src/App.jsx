@@ -3,42 +3,62 @@ import ReactMarkdown from 'react-markdown';
 import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User } from 'lucide-react';
 
 const BmoFace = ({ emotion }) => {
+  const faceColor = '#111827';
+  const faceColorDull = 'rgba(17,24,39,0.3)';
+
   const renderEyes = () => {
     switch(emotion) {
       case 'happy':
         return (
           <>
-            <div className="w-3.5 h-3.5 border-t-[3.5px] border-l-[3.5px] border-[#1e293b] rounded-tl-[8px] rotate-45 transform translate-y-1"></div>
-            <div className="w-3.5 h-3.5 border-t-[3.5px] border-r-[3.5px] border-[#1e293b] rounded-tr-[8px] -rotate-45 transform translate-y-1"></div>
+            <div className="w-3.5 h-3.5 border-t-[4px] border-l-[4px] rounded-tl-[10px] rotate-45 transform translate-y-1" style={{borderColor: faceColor}}></div>
+            <div className="w-3.5 h-3.5 border-t-[4px] border-r-[4px] rounded-tr-[10px] -rotate-45 transform translate-y-1" style={{borderColor: faceColor}}></div>
           </>
         );
       case 'sad':
       case 'error':
         return (
           <>
-            <div className="w-3.5 h-1.5 border-b-[3.5px] border-[#1e293b] rounded-full rotate-12 mt-1"></div>
-            <div className="w-3.5 h-1.5 border-b-[3.5px] border-[#1e293b] rounded-full -rotate-12 mt-1"></div>
+            <div className="w-3.5 h-1.5 border-b-[4px] rounded-full rotate-12 mt-1" style={{borderColor: faceColor}}></div>
+            <div className="w-3.5 h-1.5 border-b-[4px] rounded-full -rotate-12 mt-1" style={{borderColor: faceColor}}></div>
           </>
         );
       case 'thinking':
         return (
           <>
-            <div className="w-3.5 h-3.5 bg-[#1e293b] rounded-full animate-bounce"></div>
-            <div className="w-3.5 h-3.5 bg-[#1e293b] rounded-full animate-bounce delay-75"></div>
+            <div className="w-3.5 h-3.5 rounded-full animate-bounce" style={{backgroundColor: faceColor}}></div>
+            <div className="w-3.5 h-3.5 rounded-full animate-bounce delay-75" style={{backgroundColor: faceColor}}></div>
+          </>
+        );
+      case 'searching':
+        return (
+          <>
+            <div className="w-4 h-4 border-[3px] rounded-full animate-[ping_1.5s_infinite_reverse]" style={{borderColor: faceColor}}></div>
+            <div className="w-4 h-4 border-[3px] rounded-full animate-[ping_1.5s_infinite_reverse] delay-75" style={{borderColor: faceColor}}></div>
+          </>
+        );
+      case 'building':
+        return (
+          <>
+            <div className="w-4 h-1.5 border-b-[4px] rounded-full mt-1" style={{borderColor: faceColor}}></div>
+            <div className="w-3 rounded-full overflow-hidden flex items-center" style={{height: "14px", backgroundColor: faceColor}}>
+                <div className="w-full h-[4px] bg-white animate-[pulse_0.5s_infinite]"></div>
+            </div>
           </>
         );
       case 'typing':
         return (
           <>
-            <div className="w-[14px] h-[14px] bg-[#1e293b] rounded-full animate-pulse transition-all"></div>
-            <div className="w-[14px] h-[14px] bg-[#1e293b] rounded-full animate-pulse delay-75 transition-all"></div>
+             <div className="w-3.5 h-[4px] rounded-sm animate-pulse transition-all" style={{backgroundColor: faceColor}}></div>
+             <div className="w-3.5 h-[4px] rounded-sm animate-pulse delay-75 transition-all" style={{backgroundColor: faceColor}}></div>
           </>
         );
+      case 'talk':
       default: // idle
         return (
           <>
-            <div className="w-3 h-3 bg-[#1e293b] rounded-full animate-blink transition-all duration-300"></div>
-            <div className="w-3 h-3 bg-[#1e293b] rounded-full animate-blink delay-75 transition-all duration-300"></div>
+             <div className="w-3 h-3 rounded-full animate-pulse transition-all duration-300" style={{backgroundColor: faceColor}}></div>
+             <div className="w-3 h-3 rounded-full animate-pulse delay-75 transition-all duration-300" style={{backgroundColor: faceColor}}></div>
           </>
         );
     }
@@ -47,28 +67,79 @@ const BmoFace = ({ emotion }) => {
   const renderMouth = () => {
     switch(emotion) {
       case 'happy':
-        return <div className="w-6 h-3.5 bg-[#1e293b] rounded-b-full rounded-t-[2px]"></div>;
+        return <div className="w-6 h-3 rounded-b-full rounded-t-[1px]" style={{backgroundColor: faceColor}}></div>;
       case 'sad':
       case 'error':
-        return <div className="w-5 h-2.5 border-t-[4px] border-[#1e293b] rounded-tr-full rounded-tl-full mt-2"></div>;
+        return <div className="w-5 h-2.5 border-t-[4px] rounded-tr-full rounded-tl-full mt-2" style={{borderColor: faceColor}}></div>;
       case 'thinking':
-        return <div className="w-4 h-4 border-b-4 border-l-4 border-r-4 border-transparent border-b-[#1e293b] rounded-full animate-spin"></div>;
+        return <div className="w-4 h-4 border-b-4 border-l-4 border-r-4 border-transparent rounded-full animate-spin" style={{borderBottomColor: faceColor}}></div>;
+      case 'searching':
+        return <div className="w-4 h-[3px] rounded-sm animate-pulse" style={{backgroundColor: faceColor}}></div>;
+      case 'building':
+        return <div className="w-4 h-[4px] rounded-sm transform translate-x-1 animate-bounce" style={{backgroundColor: faceColor}}></div>;
       case 'typing':
-        return <div className="w-2.5 h-2.5 bg-[#1e293b] rounded-full mt-1 animate-pulse"></div>;
+        return <div className="w-3 h-[3px] rounded-sm mt-1 animate-pulse" style={{backgroundColor: faceColor}}></div>;
+      case 'talk':
+        return <div className="w-5 h-[4px] rounded-sm animate-pulse" style={{backgroundColor: faceColor}}></div>;
       default: // idle
-        return <div className="w-5 h-[4px] bg-[#1e293b] rounded-full animate-talk"></div>;
+        return <div className="w-5 h-2.5 rounded-b-full rounded-t-[1px]" style={{backgroundColor: faceColor}}></div>;
     }
   };
 
   return (
-    <div className={`w-24 h-24 mb-4 ${emotion === 'thinking' ? 'animate-[floating_2s_ease-in-out_infinite]' : 'animate-[floating_4s_ease-in-out_infinite]'}`}>
-      <div className={`w-full h-full rounded-[2rem] border-[6px] shadow-inner relative flex flex-col items-center justify-center overflow-hidden drop-shadow-xl transition-colors duration-500 ${emotion === 'error' ? 'bg-[#ffccd5] border-[#c92a2a]' : emotion === 'sad' ? 'bg-[#d6e8ed] border-[#1B4D7E]' : 'bg-[#E0F6E5] border-[#6C9C88]'}`}>
-        <div className="absolute top-1.5 left-2 w-3 h-1.5 bg-white/40 rounded-full"></div>
-        <div className="flex gap-4 mb-2 w-full justify-center h-4 items-center">
-           {renderEyes()}
+    <div className={`w-36 h-52 mb-0 relative origin-bottom animate-[floating_4s_ease-in-out_infinite] scale-[0.85] ${emotion === 'thinking' ? 'animate-[floating_2s_ease-in-out_infinite]' : ''}`}>
+      {/* BMO Body */}
+      <div className="w-full h-full bg-[#52B4A1] rounded-[14px] border-[5px] border-[#223F39] relative shadow-lg overflow-hidden flex flex-col items-center pt-5 pb-3">
+        
+        {/* Bezel details */}
+        <div className="absolute top-1 left-3 w-1 h-1 bg-[#1e342f] rounded-full"></div>
+        <div className="absolute top-1 right-3 w-1 h-1 bg-[#1e342f] rounded-full"></div>
+        
+        {/* Screen */}
+        <div className="w-[85%] h-24 bg-[#D1F1C1] rounded-xl border-[5px] border-[#223F39] shadow-inner mb-4 relative flex flex-col justify-center items-center drop-shadow-sm overflow-hidden z-10">
+           {/* Screen reflection */}
+           <div className="absolute top-[-20px] left-[-20px] w-[150%] h-[150%] bg-gradient-to-tr from-transparent via-white/20 to-transparent rotate-45 pointer-events-none"></div>
+
+           <div className="flex gap-4 mb-1.5 w-full justify-center h-4 items-center z-10">
+             {renderEyes()}
+           </div>
+           <div className="h-4 flex items-center justify-center z-10">
+             {renderMouth()}
+           </div>
         </div>
-        <div className="h-5 flex items-center justify-center">
-           {renderMouth()}
+
+        {/* Lower body (Controls) */}
+        <div className="w-[85%] flex-1 flex flex-col items-center px-1">
+           {/* Floppy slot */}
+           <div className="w-16 h-[5px] border-[2.5px] border-[#223F39] rounded-sm mb-4"></div>
+
+           {/* Buttons row */}
+           <div className="w-full flex justify-between items-center px-1 h-10">
+              {/* D-Pad */}
+              <div className="relative w-8 h-8 flex items-center justify-center">
+                 <div className="absolute w-8 h-2.5 bg-[#F6D24A] border-[2px] border-[#223F39] rounded-[2px]"></div>
+                 <div className="absolute h-8 w-2.5 bg-[#F6D24A] border-[2px] border-[#223F39] rounded-[2px]"></div>
+                 <div className="absolute w-2.5 h-2.5 bg-[#F6D24A] z-10"></div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="relative w-12 h-10 right-1">
+                 <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-[#E5423D] border-[2px] border-[#223F39] shadow-sm"></div>
+                 <div className="absolute bottom-0 right-3 w-5 h-5 rounded-full bg-[#468EE5] border-[2px] border-[#223F39] shadow-sm"></div>
+                 <div className="absolute top-4 left-0 w-3 h-3 rounded-full bg-[#52B4A1] border-[2px] border-[#223F39] shadow-sm"></div>
+              </div>
+           </div>
+           
+           {/* Controller Ports */}
+           <div className="flex gap-6 mt-auto">
+              <div className="w-5 h-[5px] border-[2px] border-[#223F39] rounded-[1px]"></div>
+              <div className="w-5 h-[5px] border-[2px] border-[#223F39] rounded-[1px]"></div>
+           </div>
+        </div>
+        
+        {/* Side inscription "BMO" simulated */}
+        <div className="absolute -right-1 top-12 flex flex-col items-center rotate-90 text-[8px] font-bold tracking-widest text-[#223F39] opacity-30 pointer-events-none">
+          B M O
         </div>
       </div>
     </div>
@@ -182,8 +253,6 @@ export default function App() {
     { icon: <FileUp className="w-4 h-4"/>, label: 'Subir archivos' },
     { icon: <HardDrive className="w-4 h-4"/>, label: 'Añadir desde Drive' },
     { icon: <ImageIcon className="w-4 h-4"/>, label: 'Fotos' },
-    { icon: <Code className="w-4 h-4"/>, label: 'Importar código' },
-    { icon: <Database className="w-4 h-4"/>, label: 'NotebookLM' },
   ];
 
   const menuModelos = [
@@ -225,7 +294,7 @@ export default function App() {
                    </button>
                    
                    {showHerramientas && (
-                      <div className={`absolute left-0 mb-3 w-56 bg-[#1e1e1e] border border-gray-700 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in ${isCentered ? 'top-full mt-3' : 'bottom-full slide-in-from-bottom-2'}`}>
+                      <div className={`absolute left-0 mb-3 w-56 bg-[#1e1e1e] border border-gray-700 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
                          {menuHerramientas.map((item, i) => (
                            <button key={i} className="w-full text-left px-5 py-2.5 text-sm text-gray-200 hover:bg-gray-700/50 flex items-center gap-3 transition-colors">
                              <span className="text-gray-400">{item.icon}</span>
@@ -257,7 +326,7 @@ export default function App() {
                    </button>
                    
                    {showModelos && (
-                      <div className={`absolute right-0 mb-3 w-80 bg-[#1e1e1e] border border-gray-700 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in ${isCentered ? 'top-full mt-3' : 'bottom-full slide-in-from-bottom-2'}`}>
+                      <div className={`absolute right-0 mb-3 w-80 bg-[#1e1e1e] border border-gray-700 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
                          {menuModelos.map((mod) => (
                             <button 
                               key={mod.key} 
@@ -277,9 +346,6 @@ export default function App() {
                    )}
                 </div>
 
-                <button type="button" className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-600 rounded-full transition-colors hidden sm:block">
-                   <Paperclip className="w-5 h-5" />
-                </button>
 
                 <button
                   type="button"
@@ -340,10 +406,10 @@ export default function App() {
         </div>
 
         {messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center -mt-16 px-4 animate-in fade-in duration-500 w-full relative">
-             <div className="flex flex-col items-center justify-center pb-8">
+          <div className="flex-1 flex flex-col items-center justify-center -mt-8 px-4 animate-in fade-in duration-500 w-full relative">
+             <div className="flex flex-col items-center justify-center pb-6">
                 <BmoFace emotion={emotion} />
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mt-2">
                    CHAT_NIETO
                 </h1>
              </div>
@@ -361,14 +427,24 @@ export default function App() {
                             <User className="w-5 h-5" />
                           </div>
                         ) : (
-                          <div className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-sm ${msg.isError ? 'bg-[#ffccd5] border-[#c92a2a]' : msg.registros && msg.registros.length === 0 ? 'bg-[#d6e8ed] border-[#1B4D7E]' : 'bg-[#E0F6E5] border-[#6C9C88]'}`}>
-                             {msg.isError ? (
-                               <div className="w-4 h-1 border-b-2 border-[#1e293b] rounded-full"></div>
-                             ) : msg.registros && msg.registros.length === 0 ? (
-                               <div className="w-4 h-[2px] bg-[#1e293b] rounded-full"></div>
-                             ) : (
-                               <div className="w-4 h-2 bg-[#1e293b] rounded-b-full rounded-t-sm"></div>
-                             )}
+                          <div className={`w-8 h-10 bg-[#52B4A1] flex flex-col items-center pt-1 rounded-sm border-2 border-[#223F39] relative shadow-sm overflow-hidden flex-shrink-0 ${msg.isError ? 'border-red-500' : ''}`}>
+                             <div className={`w-[85%] h-4 rounded-[2px] border-[1.5px] border-[#223F39] flex justify-center items-center shadow-inner ${msg.isError ? 'bg-[#ffccd5]' : 'bg-[#D1F1C1]'}`}>
+                                 {msg.isError ? (
+                                     <div className="w-2.5 h-1 border-b-[2px] border-[#1e293b] rounded-full"></div>
+                                 ) : msg.registros && msg.registros.length === 0 ? (
+                                     <div className="w-2.5 h-[2px] bg-[#1e293b] rounded-full"></div>
+                                 ) : (
+                                     <div className="w-2.5 h-1.5 bg-[#1e293b] rounded-b-full rounded-t-[1px]"></div>
+                                 )}
+                             </div>
+                             <div className="w-[85%] mt-1 flex justify-between px-0.5">
+                               <div className="w-2 h-2 bg-[#F6D24A] border border-[#223F39] rounded-[1px]"></div>
+                               <div className="flex gap-[1px]">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#E5423D] border border-[#223F39]"></div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#468EE5] border border-[#223F39]"></div>
+                               </div>
+                             </div>
+                             <div className="absolute bottom-[2px] w-[85%] border-t-[1.5px] border-[#223F39]"></div>
                           </div>
                         )}
                       </div>
@@ -439,8 +515,20 @@ export default function App() {
                  ))}
                  {isLoading && (
                    <div className="flex gap-5 animate-in fade-in">
-                      <div className="w-10 h-10 flex-shrink-0 animate-floating">
-                         <BmoFace emotion="thinking" />
+                      <div className="flex-shrink-0 mt-1">
+                          <div className="w-8 h-10 bg-[#52B4A1] flex flex-col items-center pt-1 rounded-sm border-2 border-[#223F39] relative shadow-sm overflow-hidden animate-floating">
+                             <div className="w-[85%] h-4 rounded-[2px] border-[1.5px] border-[#223F39] flex justify-center items-center shadow-inner bg-[#D1F1C1]">
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#1e293b] animate-bounce"></div>
+                             </div>
+                             <div className="w-[85%] mt-1 flex justify-between px-0.5">
+                               <div className="w-2 h-2 bg-[#F6D24A] border border-[#223F39] rounded-[1px]"></div>
+                               <div className="flex gap-[1px]">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#E5423D] border border-[#223F39]"></div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#468EE5] border border-[#223F39]"></div>
+                               </div>
+                             </div>
+                             <div className="absolute bottom-[2px] w-[85%] border-t-[1.5px] border-[#223F39]"></div>
+                          </div>
                       </div>
                    </div>
                  )}

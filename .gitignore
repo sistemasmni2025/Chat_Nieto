@@ -1,0 +1,15 @@
+# Archivos de Entorno (Credenciales Sensibles)
+.env
+.env.*
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Variables de Sistema Mac/Windows
+.DS_Store
+Thumbs.db
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
