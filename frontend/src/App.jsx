@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User } from 'lucide-react';
+import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2 } from 'lucide-react';
 
 const BmoFace = ({ emotion }) => {
   const faceColor = '#111827';
@@ -160,6 +160,13 @@ export default function App() {
   const [deepThink, setDeepThink] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [modeloActual, setModeloActual] = useState('Razonamiento');
+
+  // Historial de chats
+  const [chatHistory, setChatHistory] = useState(() => {
+    const saved = localStorage.getItem('chatNieto_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentChatId, setCurrentChatId] = useState(null);
   
   const herramientasRef = useRef(null);
   const modelosRef = useRef(null);
@@ -176,6 +183,34 @@ export default function App() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Guardar en localStorage siempre que cambie el history
+  useEffect(() => {
+    localStorage.setItem('chatNieto_history', JSON.stringify(chatHistory));
+  }, [chatHistory]);
+
+  // Sincronizar los mensajes actuales en el historial guardado
+  useEffect(() => {
+    if (currentChatId && messages.length > 0) {
+      setChatHistory(prev => prev.map(chat => 
+         chat.id === currentChatId ? { ...chat, messages: messages, updatedAt: Date.now() } : chat
+      ));
+    }
+  }, [messages, currentChatId]);
+
+  const formatDaysAgo = (timestamp) => {
+    if (!timestamp) return '';
+    const diffTime = Math.abs(new Date() - new Date(timestamp));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Hoy';
+    if (diffDays === 1) return 'Ayer';
+    return `Hace ${diffDays} días`;
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setCurrentChatId(null);
+  };
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -202,6 +237,21 @@ export default function App() {
     // Agregamos mensaje localmente a la UI
     const newMessages = [...messages, { id: Date.now(), role: 'user', content: userMessage }];
     setMessages(newMessages);
+
+    // Lógica para crear el chat si estamos en una pantalla vacía
+    if (!currentChatId) {
+       const newId = Date.now().toString();
+       setCurrentChatId(newId);
+       
+       let title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+       
+       setChatHistory(prev => [{
+          id: newId,
+          title: title,
+          updatedAt: Date.now(),
+          messages: newMessages
+       }, ...prev]);
+    }
     
     setIsLoading(true);
     setEmotion('thinking');
@@ -372,20 +422,45 @@ export default function App() {
     <div className="flex h-screen bg-white text-gray-800 font-sans">
       <div className="w-64 bg-gray-50 border-r border-gray-200 hidden md:flex flex-col">
         <div className="p-3">
-          <button onClick={() => setMessages([])} className="w-full flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-full font-medium transition-colors shadow-sm">
+          <button onClick={handleNewChat} className="w-full flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-full font-medium transition-colors shadow-sm">
             <Plus className="w-4 h-4 text-blue-600" />
             Nuevo chat
           </button>
         </div>
         
         <div className="flex-1 overflow-y-auto px-3 py-2">
-          <div className="text-xs font-semibold text-gray-400 mb-3 ml-2 uppercase tracking-wider mt-4">Hoy</div>
-          <button className="w-full flex items-center justify-between text-sm text-gray-700 bg-gray-200/50 rounded-lg px-3 py-2.5 mb-1 group max-w-full">
-            <div className="flex items-center gap-3 truncate max-w-[90%]">
-              <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate flex-1">Análisis Transaccional</span>
-            </div>
-          </button>
+          {chatHistory.length > 0 && <div className="text-xs font-semibold text-gray-400 mb-3 ml-2 uppercase tracking-wider mt-4">Historial</div>}
+          
+          {chatHistory.map((chat) => (
+             <div key={chat.id} className="relative group mb-1">
+                <button 
+                  onClick={() => { setMessages(chat.messages); setCurrentChatId(chat.id); }}
+                  className={`w-full flex items-center justify-between text-sm text-gray-700 rounded-lg px-3 py-2.5 max-w-full hover:bg-gray-200/80 transition-colors ${currentChatId === chat.id ? 'bg-gray-200/50 font-medium' : 'bg-transparent'}`}
+                >
+                  <div className="flex items-center gap-3 truncate max-w-[85%]">
+                    <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex flex-col items-start truncate">
+                      <span className="truncate w-full text-left">{chat.title}</span>
+                      <span className="text-[10px] text-gray-400">{formatDaysAgo(chat.updatedAt)}</span>
+                    </div>
+                  </div>
+                </button>
+                <button 
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     setChatHistory(prev => prev.filter(c => c.id !== chat.id));
+                     if (currentChatId === chat.id) {
+                        setMessages([]);
+                        setCurrentChatId(null);
+                     }
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                  title="Eliminar chat"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+             </div>
+          ))}
         </div>
         
         <div className="p-4 border-t border-gray-200">
