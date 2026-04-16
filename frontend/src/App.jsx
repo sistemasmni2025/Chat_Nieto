@@ -167,6 +167,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [currentChatId, setCurrentChatId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const herramientasRef = useRef(null);
   const modelosRef = useRef(null);
@@ -419,14 +420,18 @@ export default function App() {
   );
 
   return (
-    <div className="flex h-screen bg-white text-gray-800 font-sans">
-      <div className="w-64 bg-gray-50 border-r border-gray-200 hidden md:flex flex-col">
-        <div className="p-3">
-          <button onClick={handleNewChat} className="w-full flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2.5 rounded-full font-medium transition-colors shadow-sm">
-            <Plus className="w-4 h-4 text-blue-600" />
-            Nuevo chat
-          </button>
-        </div>
+    <div className="flex h-screen bg-white text-gray-800 font-sans relative">
+      {isSidebarOpen && (
+        <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 hidden md:flex flex-col animate-in slide-in-from-left-4 duration-200 z-40 relative">
+          <div className="p-3 flex items-center gap-2">
+            <button onClick={handleNewChat} className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium transition-colors shadow-sm">
+              <Plus className="w-4 h-4 text-blue-600" />
+              Nuevo chat
+            </button>
+            <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-md transition-colors" title="Cerrar barra lateral">
+              <PanelLeft className="w-5 h-5" />
+            </button>
+          </div>
         
         <div className="flex-1 overflow-y-auto px-3 py-2">
           {chatHistory.length > 0 && <div className="text-xs font-semibold text-gray-400 mb-3 ml-2 uppercase tracking-wider mt-4">Historial</div>}
@@ -471,11 +476,23 @@ export default function App() {
               <div className="text-sm font-medium text-gray-700">Multillantas Nieto</div>
            </div>
         </div>
-      </div>
+         </div>
+      )}
 
-      <div className="flex-1 flex flex-col relative h-full">
-        <div className="h-14 flex items-center px-4 md:px-6 justify-between border-b border-transparent">
-          <button className="p-2 -ml-2 text-gray-500 hover:text-gray-800 rounded-md md:hidden">
+
+      <div className="flex-1 flex flex-col relative h-full w-full overflow-hidden">
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
+          {!isSidebarOpen && (
+            <>
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm rounded-md transition-colors flex items-center justify-center hidden md:flex" title="Abrir barra lateral">
+                <PanelLeft className="w-5 h-5" />
+              </button>
+              <button onClick={handleNewChat} className="p-2 text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm rounded-md transition-colors flex items-center justify-center hidden md:flex" title="Nuevo chat">
+                <Plus className="w-5 h-5" />
+              </button>
+            </>
+          )}
+          <button className={`p-2 -ml-2 text-gray-500 hover:text-gray-800 rounded-md md:hidden ${!isSidebarOpen ? 'hidden' : ''}`}>
             <PanelLeft className="w-5 h-5" />
           </button>
         </div>
