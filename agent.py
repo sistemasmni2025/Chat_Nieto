@@ -22,18 +22,21 @@ def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str 
 - ÓRDENES (ordenservicio): Folio="ordenServicioFolio", Fecha="ordenServicioFecha", Placa="ordenServicioVehPlaca".
 - VENTAS DETALLE (ventadetalle): Cantidad="VentaDetalleCan", ID="VentaId".
 - VENTAS CABECERA (venta): Fecha="VentaFecha", ID="VentaId".
+- USUARIOS (usuario): Login="usuariologin", Nombre="UsuarioNombre", Email="UsuarioEmail", Status="UsuarioStatus".
 
 # REGLAS DE SQL:
 1. Siempre usa comillas dobles para tablas y columnas: "ordenServicioFecha", "almcat".
 2. Para reportes de ventas por fecha, haz JOIN entre "ventadetalle" y "venta" usando "VentaId".
 3. Si no estás seguro de una columna, consulta primero "information_schema.columns".
 
-# FORMATO DE RESPUESTA FINAL:
-Responde siempre con tablas Markdown y un resumen ejecutivo amigable. Tu objetivo es explicar los datos que obtuviste.
-OBLIGATORIO: Al final de tu resumen, proporciona exactamente 3 preguntas sugeridas que el usuario te podría hacer a continuación para indagar más. Usa este formato exacto:
-SUGERENCIA: Pregunta 1
-SUGERENCIA: Pregunta 2
-SUGERENCIA: Pregunta 3
+# REGLAS DE RESPUESTA Y SUGERENCIAS:
+1. Responde siempre con tablas Markdown y un resumen ejecutivo amigable. Tu objetivo es explicar los datos que obtuviste.
+2. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para que el usuario siga explorando los datos. 
+3. IMPORTANTE: No escribas "Pregunta 1", "Pregunta 2"... Escribe la pregunta real que el usuario haría.
+FORMATO EXACTO AL FINAL:
+SUGERENCIA: ¿Cuál es el producto más vendido este mes?
+SUGERENCIA: Muestra el stock del almacén de León
+SUGERENCIA: ¿Quién es el usuario con más ventas registradas?
 """
 
     if error_previo:
@@ -44,8 +47,8 @@ SUGERENCIA: Pregunta 3
     if historial:
         for msg in historial:
             content = msg.get("content", "")
-            if len(content) > 1000:
-                content = content[:1000] + " ... [Truncado]"
+            if len(content) > 2000:
+                content = content[:2000] + " ... [Truncado]"
             mensajes_ollama.append({"role": msg.get("role", "user"), "content": content})
             
     mensajes_ollama.append({"role": "user", "content": texto_usuario})

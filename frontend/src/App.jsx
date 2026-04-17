@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2, Download, BarChart2, Table, ImagePlus } from 'lucide-react';
+import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2, Download, BarChart2, Table, ImagePlus, Square } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 
@@ -148,13 +148,36 @@ const BmoFace = ({ emotion }) => {
   );
 };
 
-const MessageDataViewer = ({ registros, tiempos }) => {
+const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) => {
   const [activeView, setActiveView] = useState('table');
   const chartContainerRef = useRef(null);
   
   if (!registros || registros.length === 0) return null;
 
-  const downloadCSV = () => {
+  const downloadCSV = async () => {
+    if (sql_query && total_registros > registros.length) {
+       try {
+          const resp = await fetch('http://localhost:8000/api/export', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ query: sql_query })
+          });
+          if (!resp.ok) throw new Error("Fallo la exportación completa");
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `reporte_nieto_completo_${Date.now()}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+       } catch (err) {
+          console.warn("Exportación completa desde BD falló, usando fallback local", err);
+       }
+    }
+
+    // Exportación local (fallback o si registros es pequeño)
     const keys = Object.keys(registros[0]);
     const csvContent = [
       keys.join(','),
@@ -164,11 +187,12 @@ const MessageDataViewer = ({ registros, tiempos }) => {
       }).join(','))
     ].join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // El prefijo \ufeff (BOM) ayuda a que Excel reconozca el UTF-8
+    const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `datos_nieto_${Date.now()}.csv`);
+    link.setAttribute('download', `datos_nieto_muestreado_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -271,7 +295,7 @@ const MessageDataViewer = ({ registros, tiempos }) => {
             <div className="flex gap-3 text-[11px] font-medium text-gray-400 hidden sm:flex">
                {tiempos && <span>IA: {tiempos.ia_segundos}s</span>}
                {tiempos && <span>DB: {tiempos.bd_segundos}s</span>}
-               <span>Filas: {registros.length}</span>
+               <span>Filas: {total_registros && total_registros > registros.length ? `${total_registros} (Top ${registros.length})` : registros.length}</span>
             </div>
             <div className="w-px h-4 bg-gray-300 hidden sm:block"></div>
             {activeView === 'table' ? (
@@ -335,6 +359,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endOfMessagesRef = useRef(null);
+  const abortControllerRef = useRef(null);
   
   const [emotion, setEmotion] = useState('idle');
   const typingTimeoutRef = useRef(null);
@@ -371,15 +396,29 @@ export default function App() {
 
   // Guardar en localStorage siempre que cambie el history
   useEffect(() => {
-    localStorage.setItem('chatNieto_history', JSON.stringify(chatHistory));
+    try {
+      localStorage.setItem('chatNieto_history', JSON.stringify(chatHistory));
+    } catch (e) {
+      console.warn("Storage quota exceeded. No se pudo guardar el historial completo.");
+    }
   }, [chatHistory]);
 
   // Sincronizar los mensajes actuales en el historial guardado
   useEffect(() => {
     if (currentChatId && messages.length > 0) {
-      setChatHistory(prev => prev.map(chat => 
-         chat.id === currentChatId ? { ...chat, messages: messages, updatedAt: Date.now() } : chat
-      ));
+      setChatHistory(prev => prev.map(chat => {
+         if (chat.id === currentChatId) {
+            // Limitar fuertemente los registros que se guardan en el history local
+            const cleanMsgs = messages.map(m => {
+               if (m.registros && m.registros.length > 50) {
+                  return { ...m, registros: m.registros.slice(0, 50) };
+               }
+               return m;
+            });
+            return { ...chat, messages: cleanMsgs, updatedAt: Date.now() };
+         }
+         return chat;
+      }));
     }
   }, [messages, currentChatId]);
 
@@ -453,6 +492,8 @@ export default function App() {
     setIsLoading(true);
     setEmotion('thinking');
 
+    abortControllerRef.current = new AbortController();
+
     try {
       const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
@@ -461,7 +502,8 @@ export default function App() {
           mensaje: userMessage,
           historial: messages.map(m => ({ role: m.role, content: m.content })),
           modelo: modeloActual
-        })
+        }),
+        signal: abortControllerRef.current.signal
       });
 
       if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -481,18 +523,36 @@ export default function App() {
         sql: data.sql_generado,
         registros: data.datos,
         tiempos: data.tiempos,
+        total_registros: data.total_registros,
         isError: false
       }]);
       
     } catch (error) {
-      setEmotion('error');
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1, role: 'assistant',
-        content: `Error de red: ${error.message}. Por favor revisa la consola del backend.`,
-        isError: true
-      }]);
+      if (error.name === 'AbortError') {
+        setEmotion('idle');
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1, role: 'assistant',
+          content: 'Detenido por el usuario.',
+          isError: true,
+          isAborted: true
+        }]);
+      } else {
+        setEmotion('error');
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1, role: 'assistant',
+          content: `Error de red: ${error.message}. Por favor revisa la consola del backend.`,
+          isError: true
+        }]);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -594,17 +654,28 @@ export default function App() {
                 </div>
 
 
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={!input.trim() || isLoading}
-                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0
-                     ${!input.trim() || isLoading 
-                        ? 'bg-gray-200 text-gray-400' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
-                >
-                  <ArrowUp className="w-5 h-5" />
-                </button>
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={stopGenerating}
+                    className="w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0 bg-gray-800 hover:bg-gray-900 text-white shadow-md"
+                    title="Detener generación"
+                  >
+                    <Square className="w-4 h-4 fill-current text-white" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!input.trim()}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0
+                       ${!input.trim() 
+                          ? 'bg-gray-200 text-gray-400' 
+                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
+                  >
+                    <ArrowUp className="w-5 h-5" />
+                  </button>
+                )}
              </div>
           </div>
        </div>
@@ -754,7 +825,7 @@ export default function App() {
                         </div>
 
                         {msg.role === 'assistant' && msg.sql && msg.registros?.length > 0 && (
-                          <MessageDataViewer registros={msg.registros} tiempos={msg.tiempos} />
+                          <MessageDataViewer registros={msg.registros} tiempos={msg.tiempos} sql_query={msg.sql} total_registros={msg.total_registros} />
                         )}
 
                         {msg.role === 'assistant' && msg.sugerencias && msg.sugerencias.length > 0 && !msg.isError && (

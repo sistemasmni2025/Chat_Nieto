@@ -2,9 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+from fastapi.responses import StreamingResponse
+import io
+import time
+
 from agent import generar_sql
 from database import ejecutar_query_sql
-import time
 
 app = FastAPI(title="Backend IA Nieto")
 
@@ -75,9 +78,12 @@ def procesar_chat(request: ChatRequest):
         
         try:
             df = ejecutar_query_sql(query)
-            if df.shape[0] > 0:
-                datos = df.to_dicts()
             df_len = df.shape[0]
+            if df_len > 0:
+                if df_len > 2000:
+                    datos = df.head(2000).to_dicts()
+                else:
+                    datos = df.to_dicts()
         except Exception as e_sql:
             error_msg = str(e_sql)
             
@@ -92,10 +98,28 @@ def procesar_chat(request: ChatRequest):
             if rescate_respuesta["tipo"].lower() == "sql":
                 query = rescate_respuesta["query"]
                 mensaje_amigable = rescate_respuesta.get("mensaje", "He auto-corregido mi consulta.")
-                df = ejecutar_query_sql(query)
-                if df.shape[0] > 0:
-                    datos = df.to_dicts()
-                df_len = df.shape[0]
+                try:
+                    df = ejecutar_query_sql(query)
+                    df_len = df.shape[0]
+                    if df_len > 0:
+                        if df_len > 2000:
+                            datos = df.head(2000).to_dicts()
+                        else:
+                            datos = df.to_dicts()
+                except Exception as e_rescate:
+                    msg_limpio, sugs = procesar_texto_y_sugerencias(f"He intentado buscarlo, pero sigo topándome con un error técnico al buscar '{query}'. Detalle: {str(e_rescate)}")
+                    return {
+                        "status": "success",
+                        "mensaje": msg_limpio,
+                        "sugerencias": sugs,
+                        "sql_generado": None,
+                        "total_registros": 0,
+                        "datos": [],
+                        "tiempos": {
+                            "ia_segundos": round(gen_time - start_time, 2),
+                            "bd_segundos": 0
+                        }
+                    }
             else:
                 msg_limpio, sugs = procesar_texto_y_sugerencias(rescate_respuesta["mensaje"])
                 return {
@@ -130,4 +154,25 @@ def procesar_chat(request: ChatRequest):
         
     except Exception as e:
         print(f"Error Crítico: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ExportRequest(BaseModel):
+    query: str
+
+@app.post("/api/export")
+def exportar_csv(request: ExportRequest):
+    try:
+        df = ejecutar_query_sql(request.query)
+        if df.shape[0] == 0:
+            raise HTTPException(status_code=404, detail="No hay datos para exportar")
+            
+        csv_str = df.write_csv()
+        csv_bytes = csv_str.encode('utf-8-sig')
+        
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=reporte_nieto_full.csv"}
+        )
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
