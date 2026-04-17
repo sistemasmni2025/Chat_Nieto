@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2 } from 'lucide-react';
+import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2, Download, BarChart2, Table, ImagePlus } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import html2canvas from 'html2canvas';
 
 const BmoFace = ({ emotion }) => {
   const faceColor = '#111827';
@@ -146,6 +148,188 @@ const BmoFace = ({ emotion }) => {
   );
 };
 
+const MessageDataViewer = ({ registros, tiempos }) => {
+  const [activeView, setActiveView] = useState('table');
+  const chartContainerRef = useRef(null);
+  
+  if (!registros || registros.length === 0) return null;
+
+  const downloadCSV = () => {
+    const keys = Object.keys(registros[0]);
+    const csvContent = [
+      keys.join(','),
+      ...registros.map(row => keys.map(k => {
+        const val = row[k] === null ? '' : String(row[k]);
+        return val.includes(',') ? `"${val}"` : val;
+      }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `datos_nieto_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadPNG = () => {
+    if (!chartContainerRef.current) return;
+    const svgElement = chartContainerRef.current.querySelector('svg');
+    if (!svgElement) {
+       console.error("No se encontró el elemento SVG de la gráfica");
+       return;
+    }
+
+    try {
+       const scale = 3; // Renderizado HD a 3x
+       const rect = svgElement.getBoundingClientRect();
+       const clone = svgElement.cloneNode(true);
+       
+       // Forzar el viewBox para evitar cortes y escalar vectorialmente antes de rasterizar
+       if (!clone.getAttribute('viewBox')) {
+           clone.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+       }
+       
+       clone.setAttribute('width', rect.width * scale);
+       clone.setAttribute('height', rect.height * scale);
+       clone.style.backgroundColor = '#ffffff';
+
+       const serializer = new XMLSerializer();
+       let svgString = serializer.serializeToString(clone);
+       if (!svgString.includes('xmlns=')) {
+          svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+       }
+       
+       const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+       const url = URL.createObjectURL(svgBlob);
+       
+       const img = new Image();
+       img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = rect.width * scale;
+          canvas.height = rect.height * scale;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          // Dibujamos usando las dimensiones HD definidas
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const pngUrl = canvas.toDataURL('image/png', 1.0);
+          const link = document.createElement('a');
+          link.download = `grafica_nieto_HD_${Date.now()}.png`;
+          link.href = pngUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+       };
+       img.src = url;
+    } catch (error) {
+       console.error("Error convirtiendo SVG a PNG HD:", error);
+    }
+  };
+
+  let stringKey = null;
+  let numberKey = null;
+  
+  if (registros.length > 0) {
+     const sample = registros.find(r => r); 
+     if (sample) {
+       for (const key of Object.keys(sample)) {
+         if (typeof sample[key] === 'string' && !stringKey) stringKey = key;
+         if (typeof sample[key] === 'number' && !numberKey) numberKey = key;
+       }
+     }
+  }
+
+  const canChart = stringKey && numberKey && registros.length > 1;
+
+  return (
+    <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm animate-in fade-in duration-300">
+      <div className="bg-gray-50/80 px-4 py-2 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+         <div className="flex bg-gray-200/50 p-1 rounded-lg">
+            <button 
+              onClick={() => setActiveView('table')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'table' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Table className="w-3.5 h-3.5" /> Tabla
+            </button>
+            {canChart && (
+              <button 
+                onClick={() => setActiveView('chart')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'chart' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <BarChart2 className="w-3.5 h-3.5" /> Gráfica
+              </button>
+            )}
+         </div>
+         
+         <div className="flex items-center gap-3">
+            <div className="flex gap-3 text-[11px] font-medium text-gray-400 hidden sm:flex">
+               {tiempos && <span>IA: {tiempos.ia_segundos}s</span>}
+               {tiempos && <span>DB: {tiempos.bd_segundos}s</span>}
+               <span>Filas: {registros.length}</span>
+            </div>
+            <div className="w-px h-4 bg-gray-300 hidden sm:block"></div>
+            {activeView === 'table' ? (
+              <button onClick={downloadCSV} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 transition-colors bg-white border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg shadow-sm group" title="Descargar datos en Excel/CSV">
+                 <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
+                 CSV
+              </button>
+            ) : (
+              <button onClick={downloadPNG} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 transition-colors bg-white border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg shadow-sm group" title="Descargar gráfica como imagen">
+                 <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
+                 PNG
+              </button>
+            )}
+         </div>
+      </div>
+
+      <div className="bg-white relative">
+         {activeView === 'table' ? (
+            <div className="overflow-x-auto max-h-[400px]">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs uppercase bg-gray-50 text-gray-500 sticky top-0 backdrop-blur-md z-10 shadow-sm">
+                  <tr>
+                    {Object.keys(registros[0]).map((k) => (
+                      <th key={k} className="px-4 py-3 font-semibold border-b border-gray-200 whitespace-nowrap">{k}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {registros.slice(0, 50).map((fila, idx) => (
+                     <tr key={idx} className="border-b border-gray-100/70 hover:bg-gray-50/50 transition-colors">
+                      {Object.values(fila).map((val, cellIdx) => (
+                        <td key={cellIdx} className="px-4 py-2.5 whitespace-nowrap text-gray-600 max-w-[200px] truncate">
+                          {val === null ? <span className="text-gray-400 italic">null</span> : String(val)}
+                        </td>
+                      ))}
+                     </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+         ) : (
+            <div className="w-full h-[350px] p-6 pr-8 bg-white" ref={chartContainerRef}>
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={registros.slice(0, 30)} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                     <XAxis dataKey={stringKey} tick={{fontSize: 10, fill: '#6B7280'}} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
+                     <YAxis tick={{fontSize: 11, fill: '#6B7280'}} tickLine={false} axisLine={false} />
+                     <RechartsTooltip cursor={{fill: '#F3F4F6'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                     <Bar dataKey={numberKey} fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                  </BarChart>
+               </ResponsiveContainer>
+            </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -201,11 +385,23 @@ export default function App() {
 
   const formatDaysAgo = (timestamp) => {
     if (!timestamp) return '';
-    const diffTime = Math.abs(new Date() - new Date(timestamp));
+    const now = new Date();
+    const chatDate = new Date(timestamp);
+    now.setHours(0, 0, 0, 0);
+    chatDate.setHours(0, 0, 0, 0);
+    const diffTime = Math.abs(now - chatDate);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
     if (diffDays === 0) return 'Hoy';
     if (diffDays === 1) return 'Ayer';
-    return `Hace ${diffDays} días`;
+    if (diffDays <= 7) return `Hace ${diffDays} días`;
+    
+    const realDate = new Date(timestamp);
+    return realDate.toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const handleNewChat = () => {
@@ -558,35 +754,7 @@ export default function App() {
                         </div>
 
                         {msg.role === 'assistant' && msg.sql && msg.registros?.length > 0 && (
-                          <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex gap-4 text-xs font-medium text-gray-500">
-                               <span>IA: {msg.tiempos?.ia_segundos}s</span>
-                               <span>DB: {msg.tiempos?.bd_segundos}s</span>
-                               <span>Filas: {msg.registros?.length || 0}</span>
-                            </div>
-                            <div className="overflow-x-auto max-h-[400px]">
-                              <table className="w-full text-sm text-left">
-                                <thead className="text-xs uppercase bg-gray-100/80 text-gray-600 sticky top-0 backdrop-blur-md z-10">
-                                  <tr>
-                                    {Object.keys(msg.registros[0]).map((k) => (
-                                      <th key={k} className="px-4 py-3 font-semibold border-b border-gray-200 whitespace-nowrap">{k}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {msg.registros.slice(0, 50).map((fila, idx) => (
-                                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50">
-                                      {Object.values(fila).map((val, cellIdx) => (
-                                        <td key={cellIdx} className="px-4 py-2 whitespace-nowrap text-gray-700 max-w-[200px] truncate">
-                                          {val === null ? <span className="text-gray-400 italic">null</span> : String(val)}
-                                        </td>
-                                      ))}
-                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
+                          <MessageDataViewer registros={msg.registros} tiempos={msg.tiempos} />
                         )}
 
                         {msg.role === 'assistant' && msg.sugerencias && msg.sugerencias.length > 0 && !msg.isError && (
