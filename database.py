@@ -68,6 +68,17 @@ def ejecutar_query_sql(query: str) -> pl.DataFrame:
         
         # Volcar a Polars
         df = pl.DataFrame(data, schema=columns, orient="row")
+
+        # Corrección Crítica: Convertir tipos Decimal a Float64 para serialización JSON
+        for col in df.columns:
+            # Polars >= 0.20 usa pl.Decimal maneja precision/scale. 
+            # A veces psycopg2 entrega Objects que son Decimals.
+            if "Decimal" in str(df[col].dtype) or df[col].dtype == pl.Object:
+                try:
+                    df = df.with_columns(pl.col(col).cast(pl.Float64))
+                except:
+                    # Si no es un número convertible (ej: un string real en un Object column), ignoramos
+                    pass
         
         cursor.close()
         conn.close()

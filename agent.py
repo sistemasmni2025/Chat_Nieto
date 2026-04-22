@@ -8,35 +8,40 @@ load_dotenv()
 
 def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str = "Razonamiento", error_previo: str = None) -> dict:
     
-    ollama_host = os.getenv("OLLAMA_HOST", "http://172.16.71.173:11434")
-    modelo_real = os.getenv("OLLAMA_MODEL", "gemma4:e2b")
+    ollama_host = os.getenv("OLLAMA_HOST", "http://172.16.71.208:11434")
+    modelo_real = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
     
     temperatura = 0.0 if modelo_elegido in ["Razonamiento", "Ultra"] else 0.7
     
     system_prompt = f"""
-# ROLE: Analista Senior de MultillantasNieto (PostgreSQL Experto)
+# ROLE: ORVIS - Analista Senior de MultillantasNieto (PostgreSQL Experto)
 
-# DICCIONARIO DE COLUMNAS (CRÍTICO):
-- PRODUCTOS (almcat): Nombre="almnom", Clave="almcve", Precio="almprec", Rin="almrin".
-- STOCK (sucursalarticulo): Cantidad="almstock", Clave="almcve".
-- ÓRDENES (ordenservicio): Folio="ordenServicioFolio", Fecha="ordenServicioFecha", Placa="ordenServicioVehPlaca".
-- VENTAS DETALLE (ventadetalle): Cantidad="VentaDetalleCan", ID="VentaId".
-- VENTAS CABECERA (venta): Fecha="VentaFecha", ID="VentaId".
-- USUARIOS (usuario): Login="usuariologin", Nombre="UsuarioNombre", Email="UsuarioEmail", Status="UsuarioStatus".
+# DICCIONARIO DE COLUMNAS (NUEVO ESQUEMA):
+- VENTAS (fact_ventas): cantidad, precio_unitario, importe, costo_unitario, utilidad, margen, fecha. (Relaciona con: producto_id, sucursal_id, cliente_id, asesor_id).
+- INVENTARIO (fact_inventario): existencia. (Relaciona con: producto_id, sucursal_id).
+- PRODUCTOS (producto): nombre, clave, nparte, ancho, rin, precio, precio_lista. (Relaciona con: grupo_id, uom_id).
+- SUCURSALES (sucursales): nombre, ciudad, estado.
+- CLIENTES (clientes): nombre, rfc, email.
+- ASESORES (asesores): nombre, correo, perfil.
+- MARCAS (dim_marca): nombre.
+- TIPOS (dim_tipo): nombre.
 
 # REGLAS DE SQL:
-1. Siempre usa comillas dobles para tablas y columnas: "ordenServicioFecha", "almcat".
-2. Para reportes de ventas por fecha, haz JOIN entre "ventadetalle" y "venta" usando "VentaId".
-3. Si no estás seguro de una columna, consulta primero "information_schema.columns".
+1. Usa comillas dobles solo si es estrictamente necesario, pero prefiere minúsculas (ej: select nombre from producto).
+2. JOINS PRINCIPALES:
+   - Ventas con Producto: `fact_ventas.producto_id = producto.id`
+   - Ventas con Sucursal: `fact_ventas.sucursal_id = sucursales.id`
+   - Producto con Marca: `producto.grupo_id = grupos.id` -> `grupos.marca_id = dim_marca.id`
+3. Si te piden ventas por marca, debes hacer el camino: `fact_ventas` -> `producto` -> `grupos` -> `dim_marca`.
 
 # REGLAS DE RESPUESTA Y SUGERENCIAS:
-1. Responde siempre con tablas Markdown y un resumen ejecutivo amigable. Tu objetivo es explicar los datos que obtuviste.
-2. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para que el usuario siga explorando los datos. 
-3. IMPORTANTE: No escribas "Pregunta 1", "Pregunta 2"... Escribe la pregunta real que el usuario haría.
+1. Responde siempre con tablas Markdown y un resumen ejecutivo amigable.
+2. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para que el usuario siga explorando los datos.
+3. IMPORTANTE: No escribas "Pregunta 1", "Pregunta 2"... Escribe la pregunta real.
 FORMATO EXACTO AL FINAL:
-SUGERENCIA: ¿Cuál es el producto más vendido este mes?
-SUGERENCIA: Muestra el stock del almacén de León
-SUGERENCIA: ¿Quién es el usuario con más ventas registradas?
+SUGERENCIA: ¿Cuál es el producto más vendido en la sucursal de León?
+SUGERENCIA: Muestra el top 5 de clientes con mayor importe de compra.
+SUGERENCIA: ¿Cuál es el margen promedio por marca?
 """
 
     if error_previo:
@@ -100,16 +105,25 @@ SUGERENCIA: ¿Quién es el usuario con más ventas registradas?
                 try: args = json.loads(args)
                 except: pass
                     
-            query_sql = args.get("sql_query", "").strip()
+            query_sql = ""
+            if isinstance(args, dict):
+                query_sql = args.get("sql_query", "").strip()
             
-            # EJECUTAR HERRAMIENTA
-            try:
-                df = ejecutar_query_sql(query_sql)
-                datos_ia = df.head(15).to_dicts() if df.shape[0] > 0 else []
-                res_str = f"RESULTADO ({df.shape[0]} registros totales, aquí los primeros 15): {str(datos_ia)}"
-            except Exception as e_sql:
-                # Si falló la tabla, mandarle el error a la máquina!
-                res_str = f"ERROR DE POSTGRESQL: {str(e_sql)}. ¡Asegúrate de haber usado las comillas dobles correctas y las tablas que existen!"
+            if not query_sql:
+                res_str = "ERROR: No se proporcionó un query SQL válido."
+            else:
+                # EJECUTAR HERRAMIENTA
+                try:
+                    df = ejecutar_query_sql(query_sql)
+                    datos_ia = df.head(15).to_dicts() if df.shape[0] > 0 else []
+                    res_str = f"RESULTADO ({df.shape[0]} registros totales, aquí los primeros 15): {str(datos_ia)}"
+                except Exception as e_sql:
+                    # Si falló la tabla, mandarle el error a la máquina!
+                    res_str = f"ERROR DE POSTGRESQL: {str(e_sql)}. ¡Asegúrate de haber usado las comillas dobles correctas y las tablas que existen!"
+            
+            # Guardamos para el retorno final si el loop termina aquí
+            sql_final_provisional = query_sql
+            res_str_provisional = res_str
                 
             # Agregamos la petición de herramienta y su resultado al contexto
             mensajes_ollama.append(message)
@@ -139,9 +153,9 @@ SUGERENCIA: ¿Quién es el usuario con más ventas registradas?
         texto_final = message.get("content", "Procesado.").strip()
         
         # Determinamos si logró o no generar un SQL final
-        tipo = "sql" if intento > 0 and "ERROR DE POSTGRESQL" not in res_str else "chat"
-        # query_sql puede no existir si intento == 0
-        sql_final = query_sql if "query_sql" in locals() and "ERROR DE POSTGRESQL" not in res_str else ""
+        has_sql = intento > 0 and "res_str_provisional" in locals() and "ERROR DE POSTGRESQL" not in res_str_provisional
+        tipo = "sql" if has_sql else "chat"
+        sql_final = sql_final_provisional if has_sql else ""
         
         return {
             "tipo": tipo,

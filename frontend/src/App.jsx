@@ -4,19 +4,12 @@ import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield,
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 
-const NEWS_DATA = [
-  "México alcanzó cifra récord de 343,520 vehículos producidos en marzo 2026.",
+const DEFAULT_NEWS = [
+  "México alcanzó cifra récord de producción automotriz en 2026.",
   "Estrategia: El sector se mueve hacia los Software-Defined Vehicles (SDVs).",
   "Tecnología: Los Smart Tires con IoT ya son prioridad para flotas logísticas.",
-  "I+D: México cuenta con 26 centros de investigación automotriz y 15,000 ingenieros.",
-  "Inversión: Yokohama Rubber abrirá una mega planta en Saltillo para 2027.",
   "Dato Curioso: Michelin produjo su primera llanta para bicicleta en 1891.",
-  "Sostenibilidad: Crecen las llantas fabricadas con materiales bio-basados y reciclados.",
-  "Mercado: La demanda de llantas OTR crece por la minería y construcción en México.",
-  "Tendencia: Las llantas sin aire (Uptis) prometen revolucionar el mercado para 2027.",
-  "Investigación: ¿Sabías que el 'negro de humo' es lo que da durabilidad a las llantas?",
-  "Logística: El 88% de las exportaciones automotrices de México van a Norteamérica.",
-  "Smart Tech: Sensores en llantas ahora miden desgaste de banda en tiempo real.",
+  "Logística: El 88% de las exportaciones automotrices de México van a Norteamérica."
 ];
 
 
@@ -228,25 +221,25 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
   );
 };
 
-const BmoStatusBubble = ({ isLoading, newsIndex }) => {
+const OrvisStatusBubble = ({ isLoading, newsIndex, newsData }) => {
   if (!isLoading) return null;
 
   return (
     <div className="flex flex-col items-start gap-1 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/40 rounded-[24px] shadow-2xl animate-in slide-in-from-left-4 duration-500 max-w-[300px]">
       <div className="flex items-center gap-2">
         <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.5)]"></div>
-        <span className="text-[10px] font-bold text-gray-500/60 uppercase tracking-[0.2em]">Thinking...</span>
+        <span className="text-[10px] font-bold text-gray-500/60 uppercase tracking-[0.2em]">Pensando...</span>
       </div>
       <div className="min-h-[32px] flex items-center">
         <p className="text-[11px] leading-tight text-rainbow transition-opacity duration-500">
-          {NEWS_DATA[newsIndex]}
+          {newsData[newsIndex]}
         </p>
       </div>
     </div>
   );
 };
 
-const BmoFace = ({ emotion, size = 'large' }) => {
+const OrvisFace = ({ emotion, size = 'large' }) => {
   const isSmall = size === 'small';
   const techColor = '#00D2FF'; // Cyan Vibrante
   const techGlow = '0 0 15px rgba(0, 210, 255, 0.4)';
@@ -328,18 +321,18 @@ const BmoFace = ({ emotion, size = 'large' }) => {
   return (
     <div className={`relative flex flex-col items-center justify-center transition-all duration-500 ease-in-out group ${isSmall ? 'w-14 h-14' : 'mb-2'}`}>
       <div className={`${isSmall ? 'w-14 h-14 rounded-xl border' : 'w-80 h-36 rounded-[2.5rem] border'} bg-emerald-400/10 backdrop-blur-2xl border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.1),inset_0_0_20px_rgba(255,255,255,0.1)] relative flex flex-col justify-center items-center overflow-hidden transition-all duration-300 transform animate-floating`}>
-         
-         <div className={`flex ${isSmall ? 'gap-3 mb-1' : 'gap-12 mb-4'} w-full justify-center items-center z-10 transition-all duration-300 animate-scanning`}>
-           {renderEyes()}
-         </div>
-         <div className={`${isSmall ? 'h-3' : 'h-10'} flex items-center justify-center z-10 px-4 transition-all duration-300`}>
-           {renderMouth()}
-         </div>
 
-         <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,4px_100%]"></div>
-            <div className="absolute inset-0 bg-emerald-400/5 animate-breathing"></div>
-         </div>
+        <div className={`flex ${isSmall ? 'gap-3 mb-1' : 'gap-12 mb-4'} w-full justify-center items-center z-10 transition-all duration-300 animate-scanning`}>
+          {renderEyes()}
+        </div>
+        <div className={`${isSmall ? 'h-3' : 'h-10'} flex items-center justify-center z-10 px-4 transition-all duration-300`}>
+          {renderMouth()}
+        </div>
+
+        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,4px_100%]"></div>
+          <div className="absolute inset-0 bg-emerald-400/5 animate-breathing"></div>
+        </div>
       </div>
     </div>
   );
@@ -361,15 +354,31 @@ export default function App() {
   const [webSearch, setWebSearch] = useState(false);
   const [modeloActual, setModeloActual] = useState('Razonamiento');
   const [newsIndex, setNewsIndex] = useState(0);
+  const [newsData, setNewsData] = useState(DEFAULT_NEWS);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const resp = await fetch('http://localhost:8000/api/news');
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.length > 0) setNewsData(data);
+        }
+      } catch (err) {
+        console.warn("No se pudieron cargar noticias dinámicas, usando fallback.");
+      }
+    };
+    fetchNews();
+  }, []);
 
   useEffect(() => {
     let interval;
     if (isLoading) {
       interval = setInterval(() => {
-        setNewsIndex(prev => (prev + 1) % NEWS_DATA.length);
+        setNewsIndex(prev => (prev + 1) % newsData.length);
       }, 15000);
     } else {
-      setNewsIndex(prev => Math.floor(Math.random() * NEWS_DATA.length));
+      setNewsIndex(prev => Math.floor(Math.random() * newsData.length));
     }
     return () => clearInterval(interval);
   }, [isLoading]);
@@ -566,19 +575,19 @@ export default function App() {
     { key: 'Ultra', label: 'Multillantas AI Ultra', desc: 'Acceso corporativo ilimitado a BD' },
   ];
 
-  const renderBmoHUD = (isCentered = true) => (
+  const renderOrvisHUD = (isCentered = true) => (
     <div className={`flex flex-col items-center justify-center transition-all duration-700 ${isCentered ? 'mb-8' : 'scale-90 opacity-90'}`}>
       <div className="flex items-center gap-6">
-        <BmoFace emotion={emotion} />
-        <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
+        <OrvisFace emotion={emotion} />
+        <OrvisStatusBubble isLoading={isLoading} newsIndex={newsIndex} newsData={newsData} />
       </div>
 
       <div className={`flex flex-col items-center justify-center opacity-60 animate-in fade-in duration-1000 ${isCentered ? 'mb-6' : 'mb-2'}`}>
         <h1 className="text-sm font-black tracking-[0.15em] text-gray-800 leading-none">
-          BMO
+          ORVIS
         </h1>
-        <p className="text-[8px] font-bold text-gray-400 tracking-[0.4em] uppercase mt-1">
-          Bibendum Multillantas Nieto
+        <p className="text-[8px] font-bold text-blue-500/60 tracking-[0.4em] uppercase mt-1">
+          Inteligencia Corporativa
         </p>
       </div>
     </div>
@@ -587,7 +596,7 @@ export default function App() {
   const renderInputBox = (isCentered = false) => (
     <div className={`w-full ${isCentered ? 'max-w-2xl mx-auto mt-6' : 'max-w-3xl mx-auto bg-gradient-to-t from-white via-white/80 to-transparent pt-4 pb-6 px-4 md:px-0 relative z-20'}`}>
 
-      {isCentered && renderBmoHUD(true)}
+      {isCentered && renderOrvisHUD(true)}
 
       <div className={`bg-gray-50 rounded-[28px] border border-gray-300 focus-within:bg-white focus-within:shadow-[0_4px_25px_rgba(37,99,235,0.08)] focus-within:border-blue-400 transition-all p-3 w-full ${isCentered ? 'shadow-md border-gray-200' : ''}`}>
 
@@ -800,12 +809,12 @@ export default function App() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-6 -ml-1">
-                           <div className="w-14 h-14 flex items-center justify-center">
-                              <BmoFace emotion={idx === messages.length - 1 ? emotion : 'idle'} size="small" />
-                           </div>
-                           {idx === messages.length - 1 && isLoading && (
-                             <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
-                           )}
+                          <div className="w-14 h-14 flex items-center justify-center">
+                            <BmoFace emotion={idx === messages.length - 1 ? emotion : 'idle'} size="small" />
+                          </div>
+                          {idx === messages.length - 1 && isLoading && (
+                            <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
+                          )}
                         </div>
                       )}
                     </div>
@@ -850,7 +859,7 @@ export default function App() {
                     <div className="flex-shrink-0 mt-1">
                       <div className="flex items-center gap-6 -ml-1">
                         <div className="w-14 h-14 flex items-center justify-center">
-                           <BmoFace emotion={emotion} size="small" />
+                          <BmoFace emotion={emotion} size="small" />
                         </div>
                         <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
                       </div>
