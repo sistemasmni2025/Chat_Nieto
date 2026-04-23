@@ -66,29 +66,83 @@
 }
 
 body {
-  background-color: #ffffff;
-  color: #1f2937;
+  /* Fondo inmersivo claro que simula el entorno de la imagen Frost Light */
+  background-color: #f1f5f9;
+  background-image: 
+    radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.1), transparent 40%),
+    radial-gradient(ellipse at 20% 80%, rgba(56, 189, 248, 0.1), transparent 50%),
+    linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+  color: #1e293b;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   margin: 0;
   padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* El verdadero efecto Glassmorphism de la imagen Frost Light */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 1);
+  border-left: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), inset 0 2px 20px rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 100px;
+}
+
+.glass-input:focus-within {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(34, 211, 238, 0.6);
+  box-shadow: 0 10px 40px rgba(34, 211, 238, 0.15), inset 0 2px 20px rgba(255, 255, 255, 0.8);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+.sidebar-item-active {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1) 0%, transparent 100%);
+  border-left: 3px solid #0284c7;
+  color: #0284c7;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #1B4D7E;
+  background: #0284c7;
 }
 
-input:focus, button:focus {
+input:focus, button:focus, textarea:focus {
   outline: none;
 }

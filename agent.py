@@ -14,7 +14,7 @@ def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str 
     temperatura = 0.0 if modelo_elegido in ["Razonamiento", "Ultra"] else 0.7
     
     system_prompt = f"""
-# ROLE: ORVIS - Analista Senior de MultillantasNieto (PostgreSQL Experto)
+# ROLE: ORBIS - Tu Asistente de Multillantas Nieto (PostgreSQL Experto)
 
 # DICCIONARIO DE COLUMNAS (NUEVO ESQUEMA):
 - VENTAS (fact_ventas): cantidad, precio_unitario, importe, costo_unitario, utilidad, margen, fecha. (Relaciona con: producto_id, sucursal_id, cliente_id, asesor_id).
@@ -35,6 +35,7 @@ def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str 
 3. Si te piden ventas por marca, debes hacer el camino: `fact_ventas` -> `producto` -> `grupos` -> `dim_marca`.
 
 # REGLAS DE RESPUESTA Y SUGERENCIAS:
+0. PRESENTACIÓN (CRÍTICO): Si es el primer mensaje del usuario (historial vacío), DEBES empezar siempre con: "¡Hola! Soy ORBIS, tu Asistente de Multillantas Nieto. Estoy aquí para ayudarte a extraer y analizar la información más valiosa de nuestras ventas, inventarios y clientes, etc."
 1. Responde siempre con tablas Markdown y un resumen ejecutivo amigable.
 2. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para que el usuario siga explorando los datos.
 3. IMPORTANTE: No escribas "Pregunta 1", "Pregunta 2"... Escribe la pregunta real.

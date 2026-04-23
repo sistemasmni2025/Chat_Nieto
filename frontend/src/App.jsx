@@ -139,19 +139,19 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
   const canChart = stringKey && numberKey && registros.length > 1;
 
   return (
-    <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm animate-in fade-in duration-300">
-      <div className="bg-gray-50/80 px-4 py-2 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
-        <div className="flex bg-gray-200/50 p-1 rounded-lg">
+    <div className="mt-4 glass-card overflow-hidden animate-in fade-in duration-300">
+      <div className="px-4 py-3 border-b border-black/10 flex justify-between items-center flex-wrap gap-2">
+        <div className="flex bg-black/5 p-1 rounded-lg">
           <button
             onClick={() => setActiveView('table')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'table' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'table' ? 'bg-black/10 text-cyan-400 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
           >
             <Table className="w-3.5 h-3.5" /> Tabla
           </button>
           {canChart && (
             <button
               onClick={() => setActiveView('chart')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'chart' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeView === 'chart' ? 'bg-black/10 text-cyan-400 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
             >
               <BarChart2 className="w-3.5 h-3.5" /> Gráfica
             </button>
@@ -159,19 +159,19 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex gap-3 text-[11px] font-medium text-gray-400 hidden sm:flex">
+          <div className="flex gap-3 text-[11px] font-medium text-slate-500 hidden sm:flex">
             {tiempos && <span>IA: {tiempos.ia_segundos}s</span>}
             {tiempos && <span>DB: {tiempos.bd_segundos}s</span>}
             <span>Filas: {total_registros && total_registros > registros.length ? `${total_registros} (Top ${registros.length})` : registros.length}</span>
           </div>
-          <div className="w-px h-4 bg-gray-300 hidden sm:block"></div>
+          <div className="w-px h-4 bg-black/10 hidden sm:block"></div>
           {activeView === 'table' ? (
-            <button onClick={downloadCSV} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 transition-colors bg-white border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg shadow-sm group" title="Descargar datos en Excel/CSV">
+            <button onClick={downloadCSV} className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-cyan-400 transition-colors bg-black/5 border border-black/10 hover:border-cyan-400/30 px-2.5 py-1.5 rounded-lg shadow-sm group">
               <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
               CSV
             </button>
           ) : (
-            <button onClick={downloadPNG} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 transition-colors bg-white border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg shadow-sm group" title="Descargar gráfica como imagen">
+            <button onClick={downloadPNG} className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-cyan-400 transition-colors bg-black/5 border border-black/10 hover:border-cyan-400/30 px-2.5 py-1.5 rounded-lg shadow-sm group">
               <Download className="w-3.5 h-3.5 group-hover:-translate-y-0.5 transition-transform" />
               PNG
             </button>
@@ -179,23 +179,23 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
         </div>
       </div>
 
-      <div className="bg-white relative">
+      <div className="bg-transparent relative">
         {activeView === 'table' ? (
           <div className="overflow-x-auto max-h-[400px]">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-gray-50 text-gray-500 sticky top-0 backdrop-blur-md z-10 shadow-sm">
+              <thead className="text-xs uppercase bg-black/5 text-slate-600 sticky top-0 backdrop-blur-md z-10">
                 <tr>
                   {Object.keys(registros[0]).map((k) => (
-                    <th key={k} className="px-4 py-3 font-semibold border-b border-gray-200 whitespace-nowrap">{k}</th>
+                    <th key={k} className="px-4 py-3 font-semibold border-b border-black/10 whitespace-nowrap">{k}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/5">
                 {registros.slice(0, 50).map((fila, idx) => (
-                  <tr key={idx} className="border-b border-gray-100/70 hover:bg-gray-50/50 transition-colors">
+                  <tr key={idx} className="hover:bg-black/5 transition-colors">
                     {Object.values(fila).map((val, cellIdx) => (
-                      <td key={cellIdx} className="px-4 py-2.5 whitespace-nowrap text-gray-600 max-w-[200px] truncate">
-                        {val === null ? <span className="text-gray-400 italic">null</span> : String(val)}
+                      <td key={cellIdx} className="px-4 py-2.5 whitespace-nowrap text-slate-700 max-w-[200px] truncate">
+                        {val === null ? <span className="text-slate-500 italic">null</span> : String(val)}
                       </td>
                     ))}
                   </tr>
@@ -204,14 +204,14 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
             </table>
           </div>
         ) : (
-          <div className="w-full h-[350px] p-6 pr-8 bg-white" ref={chartContainerRef}>
+          <div className="w-full h-[350px] p-6 pr-8 bg-transparent" ref={chartContainerRef}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={registros.slice(0, 30)} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey={stringKey} tick={{ fontSize: 10, fill: '#6B7280' }} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
-                <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} />
-                <RechartsTooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey={numberKey} fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey={stringKey} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} angle={-45} textAnchor="end" height={60} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
+                <Bar dataKey={numberKey} fill="#22d3ee" radius={[4, 4, 0, 0]} maxBarSize={50} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -221,14 +221,14 @@ const MessageDataViewer = ({ registros, tiempos, sql_query, total_registros }) =
   );
 };
 
-const OrvisStatusBubble = ({ isLoading, newsIndex, newsData }) => {
+const OrbisStatusBubble = ({ isLoading, newsIndex, newsData }) => {
   if (!isLoading) return null;
 
   return (
-    <div className="flex flex-col items-start gap-1 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/40 rounded-[24px] shadow-2xl animate-in slide-in-from-left-4 duration-500 max-w-[300px]">
+    <div className="flex flex-col items-start gap-1 px-5 py-3 glass-card animate-in slide-in-from-left-4 duration-500 max-w-[350px]">
       <div className="flex items-center gap-2">
-        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.5)]"></div>
-        <span className="text-[10px] font-bold text-gray-500/60 uppercase tracking-[0.2em]">Pensando...</span>
+        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]"></div>
+        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Pensando...</span>
       </div>
       <div className="min-h-[32px] flex items-center">
         <p className="text-[11px] leading-tight text-rainbow transition-opacity duration-500">
@@ -239,101 +239,42 @@ const OrvisStatusBubble = ({ isLoading, newsIndex, newsData }) => {
   );
 };
 
-const OrvisFace = ({ emotion, size = 'large' }) => {
+const OrbisFace = ({ emotion, size = 'large' }) => {
   const isSmall = size === 'small';
-  const techColor = '#00D2FF'; // Cyan Vibrante
-  const techGlow = '0 0 15px rgba(0, 210, 255, 0.4)';
 
-  const renderEyes = () => {
-    switch (emotion) {
-      case 'happy':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-3 h-3 border-t-[3px] border-l-[3px]' : 'w-6 h-6 border-t-[5px] border-l-[5px]'} rounded-tl-[8px] rotate-45 transform translate-y-0.5 opacity-90 animate-blink`} style={{ borderColor: techColor }}></div>
-            <div className={`${isSmall ? 'w-3 h-3 border-t-[3px] border-r-[3px]' : 'w-6 h-6 border-t-[5px] border-r-[5px]'} rounded-tr-[8px] -rotate-45 transform translate-y-0.5 opacity-90 animate-blink`} style={{ borderColor: techColor }}></div>
-          </>
-        );
-      case 'sad':
-      case 'error':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-4 h-1 border-b-2' : 'w-8 h-2.5 border-b-[5px]'} rounded-full rotate-12 mt-1 opacity-90`} style={{ borderColor: emotion === 'error' ? '#ef4444' : techColor }}></div>
-            <div className={`${isSmall ? 'w-4 h-1 border-b-2' : 'w-8 h-2.5 border-b-[5px]'} rounded-full -rotate-12 mt-1 opacity-90`} style={{ borderColor: emotion === 'error' ? '#ef4444' : techColor }}></div>
-          </>
-        );
-      case 'thinking':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-4 h-1' : 'w-8 h-[6px]'} bg-current rounded-full -rotate-3 animate-pulse`} style={{ color: techColor }}></div>
-            <div className={`${isSmall ? 'w-4 h-1' : 'w-8 h-[6px]'} bg-current rounded-full rotate-3 animate-pulse`} style={{ color: techColor }}></div>
-          </>
-        );
-      case 'searching':
-      case 'building':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-2.5 h-2.5' : 'w-6 h-6'} rounded-full animate-bounce opacity-90`} style={{ backgroundColor: techColor, boxShadow: techGlow }}></div>
-            <div className={`${isSmall ? 'w-2.5 h-2.5' : 'w-6 h-6'} rounded-full animate-bounce delay-75 opacity-90`} style={{ backgroundColor: techColor, boxShadow: techGlow }}></div>
-          </>
-        );
-      case 'typing':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-2 h-2 ml-0.5' : 'w-3.5 h-3.5 ml-2'} rounded-full opacity-90 animate-blink`} style={{ backgroundColor: techColor, boxShadow: techGlow }}></div>
-            <div className={`${isSmall ? 'w-2 h-2 mr-0.5' : 'w-3.5 h-3.5 mr-2'} rounded-full opacity-90 animate-blink`} style={{ backgroundColor: techColor, boxShadow: techGlow }}></div>
-          </>
-        );
-      case 'talk':
-        return (
-          <>
-            <div className={`${isSmall ? 'w-3 h-3' : 'w-5 h-5'} rounded-full opacity-100 animate-blink`} style={{ backgroundColor: techColor, boxShadow: `0 0 10px ${techColor}` }}></div>
-            <div className={`${isSmall ? 'w-3 h-3' : 'w-5 h-5'} rounded-full opacity-100 animate-blink`} style={{ backgroundColor: techColor, boxShadow: `0 0 10px ${techColor}` }}></div>
-          </>
-        );
-      default:
-        return (
-          <>
-            <div className={`${isSmall ? 'w-3 h-3 ml-0.5' : 'w-4.5 h-4.5 ml-3'} rounded-full opacity-90 animate-blink transition-all`} style={{ backgroundColor: techColor, boxShadow: `0 0 10px ${techColor}44` }}></div>
-            <div className={`${isSmall ? 'w-3 h-3 mr-0.5' : 'w-4.5 h-4.5 mr-3'} rounded-full opacity-90 animate-blink transition-all`} style={{ backgroundColor: techColor, boxShadow: `0 0 10px ${techColor}44` }}></div>
-          </>
-        );
-    }
-  };
+  // Determine which video to play based on emotion state (added ?v=2 to clear browser cache)
+  const videoFile = emotion === 'idle' ? '/orbis-idle.webm?v=2' : '/orbis-thinking.webm?v=2';
 
-  const renderMouth = () => {
+  const getAnimationClass = () => {
     switch (emotion) {
-      case 'happy':
-        return <div className={`${isSmall ? 'w-6 h-3 rounded-b-full' : 'w-12 h-6 rounded-b-full rounded-t-[2px] opacity-90 animate-pulse'}`} style={{ backgroundColor: techColor, boxShadow: techGlow }}></div>;
-      case 'sad':
+      case 'idle': return 'animate-floating';
       case 'error':
-        return <div className={`${isSmall ? 'w-6 h-1 border-t-2' : 'w-10 h-4 border-t-[5px]'} rounded-tr-full rounded-tl-full mt-2 opacity-90`} style={{ borderColor: emotion === 'error' ? '#ef4444' : techColor }}></div>;
-      case 'thinking':
-        return <div className={`${isSmall ? 'w-6 h-1' : 'w-10 h-1.5'} bg-current opacity-80 rounded-full animate-pulse`} style={{ color: techColor }}></div>;
-      case 'typing':
-        return <div className={`${isSmall ? 'w-5 h-2 border-b-2' : 'w-9 h-5 border-b-[4px]'} rounded-full animate-pulse`} style={{ borderColor: techColor }}></div>;
-      case 'talk':
-        return <div className={`${isSmall ? 'w-6 h-6 border-2' : 'w-10 h-12 border-[5px]'} rounded-full animate-talk`} style={{ borderColor: techColor, boxShadow: isSmall ? 'none' : `inset 0 0 15px ${techColor}` }}></div>;
-      default:
-        return <div className={`${isSmall ? 'w-5 h-1 border-b-2' : 'w-8 h-3 border-b-[3px]'} rounded-full opacity-40 animate-breathing`} style={{ borderColor: techColor }}></div>;
+      case 'sad': return 'grayscale opacity-80 scale-95';
+      default: return 'scale-[1.05] drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]';
     }
   };
 
   return (
-    <div className={`relative flex flex-col items-center justify-center transition-all duration-500 ease-in-out group ${isSmall ? 'w-14 h-14' : 'mb-2'}`}>
-      <div className={`${isSmall ? 'w-14 h-14 rounded-xl border' : 'w-80 h-36 rounded-[2.5rem] border'} bg-emerald-400/10 backdrop-blur-2xl border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.1),inset_0_0_20px_rgba(255,255,255,0.1)] relative flex flex-col justify-center items-center overflow-hidden transition-all duration-300 transform animate-floating`}>
+    <div className={`relative flex items-center justify-center transition-all duration-500 ease-in-out ${isSmall ? 'w-14 h-14' : 'w-48 h-48 mb-6'} ${getAnimationClass()}`}>
+      
+      {/* Circular Avatar Container */}
+      <div className={`relative w-full h-full rounded-full overflow-hidden ${isSmall ? 'border-[3px]' : 'border-[6px]'} border-white bg-white shadow-[0_10px_25px_rgba(0,0,0,0.15)] z-10 flex items-center justify-center ring-4 ring-slate-100/50`}>
+        
+        {/* Inner shadow for slight depth */}
+        <div className="absolute inset-0 shadow-[inset_0_4px_10px_rgba(0,0,0,0.05)] rounded-full z-10 pointer-events-none"></div>
 
-        <div className={`flex ${isSmall ? 'gap-3 mb-1' : 'gap-12 mb-4'} w-full justify-center items-center z-10 transition-all duration-300 animate-scanning`}>
-          {renderEyes()}
-        </div>
-        <div className={`${isSmall ? 'h-3' : 'h-10'} flex items-center justify-center z-10 px-4 transition-all duration-300`}>
-          {renderMouth()}
-        </div>
-
-        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,4px_100%]"></div>
-          <div className="absolute inset-0 bg-emerald-400/5 animate-breathing"></div>
-        </div>
+        {/* The Video */}
+        <video 
+          key={videoFile}
+          src={videoFile} 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className={`w-full h-full object-cover object-center ${isSmall ? 'scale-[1.4]' : 'scale-[1.25]'} z-0 pointer-events-none`}
+        />
       </div>
+
     </div>
   );
 };
@@ -453,8 +394,14 @@ export default function App() {
   };
 
   const handleNewChat = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setMessages([]);
     setCurrentChatId(null);
+    setEmotion('idle');
+    setIsLoading(false);
+    setInput('');
   };
 
   const handleInputChange = (e) => {
@@ -472,12 +419,14 @@ export default function App() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, directText = null) => {
     if (e?.preventDefault) e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    
+    const textToSubmit = directText || input;
+    if (!textToSubmit.trim() || isLoading) return;
 
-    const userMessage = input.trim();
-    setInput('');
+    const userMessage = textToSubmit.trim();
+    if (!directText) setInput('');
 
     const newMessages = [...messages, { id: Date.now(), role: 'user', content: userMessage }];
     setMessages(newMessages);
@@ -522,11 +471,30 @@ export default function App() {
         setEmotion('happy');
       }
 
+      let parsedContent = data.mensaje || "Respuesta procesada exitosamente.";
+      let extractedSugerencias = data.sugerencias || [];
+
+      // Extraer sugerencias si la IA las mandó en formato de texto Markdown
+      const lines = parsedContent.split('\n');
+      const cleanLines = [];
+      lines.forEach(line => {
+        const match = line.match(/^\s*(?:\*\*)?SUGERENCIA:(?:\*\*)?\s*(.*)/i);
+        if (match) {
+          let sugText = match[1].trim();
+          sugText = sugText.replace(/^["*]+|["*]+$/g, '').trim(); // Limpiar comillas o asteriscos
+          if (sugText) extractedSugerencias.push(sugText);
+        } else {
+          cleanLines.push(line);
+        }
+      });
+      
+      parsedContent = cleanLines.join('\n').trim();
+
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: data.mensaje || "Respuesta procesada exitosamente.",
-        sugerencias: data.sugerencias || [],
+        content: parsedContent,
+        sugerencias: extractedSugerencias,
         sql: data.sql_generado,
         registros: data.datos,
         tiempos: data.tiempos,
@@ -575,30 +543,31 @@ export default function App() {
     { key: 'Ultra', label: 'Multillantas AI Ultra', desc: 'Acceso corporativo ilimitado a BD' },
   ];
 
-  const renderOrvisHUD = (isCentered = true) => (
-    <div className={`flex flex-col items-center justify-center transition-all duration-700 ${isCentered ? 'mb-8' : 'scale-90 opacity-90'}`}>
-      <div className="flex items-center gap-6">
-        <OrvisFace emotion={emotion} />
-        <OrvisStatusBubble isLoading={isLoading} newsIndex={newsIndex} newsData={newsData} />
+  const renderOrbisHUD = (isCentered = true) => (
+    <div className={`flex flex-col items-center justify-center transition-all duration-700 ${isCentered ? 'mb-12' : 'scale-90 opacity-90'}`}>
+      <div className="flex items-center gap-6 relative">
+        <div className="absolute inset-0 bg-cyan-500/20 blur-[100px] rounded-full pointer-events-none"></div>
+        <OrbisFace emotion={emotion} />
+        <OrbisStatusBubble isLoading={isLoading} newsIndex={newsIndex} newsData={newsData} />
       </div>
 
-      <div className={`flex flex-col items-center justify-center opacity-60 animate-in fade-in duration-1000 ${isCentered ? 'mb-6' : 'mb-2'}`}>
-        <h1 className="text-sm font-black tracking-[0.15em] text-gray-800 leading-none">
-          ORVIS
+      <div className={`flex flex-col items-center justify-center animate-in fade-in duration-1000 ${isCentered ? 'mb-8' : 'mb-2'}`}>
+        <h1 className="text-3xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-cyan-600 leading-none drop-shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+          ORBIS
         </h1>
-        <p className="text-[8px] font-bold text-blue-500/60 tracking-[0.4em] uppercase mt-1">
-          Inteligencia Corporativa
+        <p className="text-[9px] font-bold text-cyan-400 tracking-[0.5em] uppercase mt-2">
+          Inteligencia Artificial Nieto
         </p>
       </div>
     </div>
   );
 
   const renderInputBox = (isCentered = false) => (
-    <div className={`w-full ${isCentered ? 'max-w-2xl mx-auto mt-6' : 'max-w-3xl mx-auto bg-gradient-to-t from-white via-white/80 to-transparent pt-4 pb-6 px-4 md:px-0 relative z-20'}`}>
+    <div className={`w-full px-4 md:px-0 relative z-20 ${isCentered ? 'max-w-3xl mx-auto mt-6' : 'max-w-4xl mx-auto pb-8'}`}>
 
-      {isCentered && renderOrvisHUD(true)}
+      {isCentered && renderOrbisHUD(true)}
 
-      <div className={`bg-gray-50 rounded-[28px] border border-gray-300 focus-within:bg-white focus-within:shadow-[0_4px_25px_rgba(37,99,235,0.08)] focus-within:border-blue-400 transition-all p-3 w-full ${isCentered ? 'shadow-md border-gray-200' : ''}`}>
+      <div className="glass-input p-2.5 w-full relative">
 
         <div className="px-2 pt-1 pb-2">
           <textarea
@@ -610,8 +579,8 @@ export default function App() {
                 handleSubmit();
               }
             }}
-            placeholder={deepThink ? "Razonamiento profundo activo. ¿Qué quieres investigar?" : "Háblale a tu Inteligencia Nieto..."}
-            className="w-full min-h-[44px] max-h-32 bg-transparent text-gray-800 placeholder-gray-500 text-base resize-none focus:outline-none"
+            placeholder={deepThink ? "Razonamiento profundo activo..." : "Escribe tu consulta para ORBIS..."}
+            className="w-full min-h-[48px] max-h-32 bg-transparent text-slate-800 placeholder-slate-400 text-lg resize-none focus:outline-none pl-4 pt-3"
             rows={1}
             disabled={isLoading}
           />
@@ -623,16 +592,16 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setShowHerramientas(!showHerramientas)}
-                className={`flex items-center justify-center p-2 rounded-full transition-colors ${showHerramientas ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}
+                className={`flex items-center justify-center p-3 rounded-full transition-all ${showHerramientas ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-600 hover:bg-black/5 hover:text-cyan-300'}`}
               >
                 <Plus className="w-5 h-5" />
               </button>
 
               {showHerramientas && (
-                <div className={`absolute left-0 mb-3 w-56 bg-[#1e1e1e] border border-gray-700 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
+                <div className={`absolute left-0 mb-3 w-56 bg-white/90 backdrop-blur-2xl border border-black/10 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
                   {menuHerramientas.map((item, i) => (
-                    <button key={i} className="w-full text-left px-5 py-2.5 text-sm text-gray-200 hover:bg-gray-700/50 flex items-center gap-3 transition-colors">
-                      <span className="text-gray-400">{item.icon}</span>
+                    <button key={i} className="w-full text-left px-5 py-2.5 text-sm text-slate-700 hover:bg-black/5 flex items-center gap-3 transition-colors">
+                      <span className="text-slate-600">{item.icon}</span>
                       {item.label}
                     </button>
                   ))}
@@ -643,50 +612,49 @@ export default function App() {
             <button
               type="button"
               onClick={() => setDeepThink(!deepThink)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${deepThink ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-gray-200/70 hover:text-gray-700'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${deepThink ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-transparent border-transparent text-slate-500 hover:bg-black/5 hover:text-slate-700'}`}
             >
-              <Brain className={`w-4 h-4 ${deepThink ? 'text-blue-600' : ''}`} />
+              <Brain className={`w-4 h-4 ${deepThink ? 'text-cyan-400' : ''}`} />
               Pensamiento Profundo
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 mr-4">
             <div className="relative hidden md:block" ref={modelosRef}>
               <button
                 type="button"
                 onClick={() => setShowModelos(!showModelos)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-200/70 hover:text-gray-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-slate-600 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-slate-800 transition-all"
               >
-                {modeloActual} <ChevronDown className="w-4 h-4" />
+                {modeloActual} <ChevronDown className="w-4 h-4 text-slate-400" />
               </button>
 
               {showModelos && (
-                <div className={`absolute right-0 mb-3 w-80 bg-[#1e1e1e] border border-gray-700 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
+                <div className={`absolute right-0 mb-3 w-80 bg-white/90 backdrop-blur-2xl border border-black/10 rounded-3xl shadow-2xl p-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
                   {menuModelos.map((mod) => (
                     <button
                       key={mod.key}
                       onClick={() => { setModeloActual(mod.label); setShowModelos(false); }}
-                      className="w-full text-left px-4 py-3 rounded-2xl hover:bg-gray-800 transition-colors flex items-center justify-between group"
+                      className="w-full text-left px-4 py-3 rounded-2xl hover:bg-black/5 transition-colors flex items-center justify-between group"
                     >
                       <div>
-                        <div className={`text-base font-medium ${modeloActual === mod.label ? 'text-blue-400' : 'text-gray-200'}`}>
+                        <div className={`text-base font-medium ${modeloActual === mod.label ? 'text-cyan-600' : 'text-slate-800'}`}>
                           {mod.label}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5">{mod.desc}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{mod.desc}</div>
                       </div>
-                      {modeloActual === mod.label && <Check className="w-5 h-5 text-blue-400" />}
+                      {modeloActual === mod.label && <Check className="w-5 h-5 text-cyan-500" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-
             {isLoading ? (
               <button
                 type="button"
                 onClick={stopGenerating}
-                className="w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0 bg-gray-800 hover:bg-gray-900 text-white shadow-md"
+                className="w-11 h-11 flex items-center justify-center rounded-full transition-all flex-shrink-0 bg-red-500 hover:bg-red-600 text-white shadow-lg border border-red-400"
                 title="Detener generación"
               >
                 <Square className="w-4 h-4 fill-current text-white" />
@@ -696,10 +664,10 @@ export default function App() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={!input.trim()}
-                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all flex-shrink-0
+                className={`w-11 h-11 flex items-center justify-center rounded-full transition-all flex-shrink-0
                        ${!input.trim()
-                    ? 'bg-gray-200 text-gray-400'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'}`}
+                    ? 'bg-slate-100 text-slate-400 border border-slate-200'
+                    : 'bg-cyan-500 hover:bg-cyan-400 text-white shadow-[0_5px_15px_rgba(34,211,238,0.4)] border border-cyan-400/50'}`}
               >
                 <ArrowUp className="w-5 h-5" />
               </button>
@@ -708,40 +676,43 @@ export default function App() {
         </div>
       </div>
 
-      <div className={`text-center mt-3 text-xs text-gray-400 font-medium ${isCentered ? 'mt-6' : ''}`}>
-        CHAT_NIETO | Motor Integrado Corporativo
+      <div className={`text-center mt-3 text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase ${isCentered ? 'mt-6' : ''}`}>
+        ORBIS | Motor de Inteligencia Nieto
       </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-white text-gray-800 font-sans relative">
+    <div className="flex h-screen bg-transparent text-slate-800 font-sans relative overflow-hidden">
       {isSidebarOpen && (
-        <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-200 hidden md:flex flex-col animate-in slide-in-from-left-4 duration-200 z-40 relative">
-          <div className="p-3 flex items-center gap-2">
-            <button onClick={handleNewChat} className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium transition-colors shadow-sm">
-              <Plus className="w-4 h-4 text-blue-600" />
-              Nuevo chat
+        <div className="w-[300px] flex-shrink-0 glass-panel hidden md:flex flex-col animate-in slide-in-from-left-4 duration-300 z-40 relative border-r-0 border-y-0 rounded-r-3xl my-2 ml-2">
+          
+          {/* El Logo Superior del Sidebar fue removido para ahorrar espacio */}
+
+          <div className="p-4 flex items-center gap-2">
+            <button onClick={handleNewChat} className="flex-1 flex items-center justify-center gap-2 glass-card hover:bg-black/10 text-cyan-400 px-4 py-3 font-semibold transition-all shadow-lg group">
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+              Nuevo Chat
             </button>
-            <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700 rounded-md transition-colors" title="Cerrar barra lateral">
+            <button onClick={() => setIsSidebarOpen(false)} className="p-3 text-slate-500 hover:bg-black/5 hover:text-cyan-400 rounded-xl transition-all" title="Ocultar panel">
               <PanelLeft className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-3 py-2">
-            {chatHistory.length > 0 && <div className="text-xs font-semibold text-gray-400 mb-3 ml-2 uppercase tracking-wider mt-4">Historial</div>}
+          <div className="flex-1 overflow-y-auto px-4 py-2 scrollbar-thin">
+            {chatHistory.length > 0 && <div className="text-[10px] font-bold text-slate-500/70 mb-4 ml-2 uppercase tracking-[0.2em] mt-2">Consultas Recientes</div>}
 
             {chatHistory.map((chat) => (
-              <div key={chat.id} className="relative group mb-1">
+              <div key={chat.id} className="relative group mb-2">
                 <button
                   onClick={() => { setMessages(chat.messages); setCurrentChatId(chat.id); }}
-                  className={`w-full flex items-center justify-between text-sm text-gray-700 rounded-lg px-3 py-2.5 max-w-full hover:bg-gray-200/80 transition-colors ${currentChatId === chat.id ? 'bg-gray-200/50 font-medium' : 'bg-transparent'}`}
+                  className={`w-full flex items-center justify-between text-sm rounded-xl px-4 py-3 max-w-full transition-all ${currentChatId === chat.id ? 'sidebar-item-active font-semibold shadow-lg' : 'text-slate-700 hover:bg-black/5 bg-transparent'}`}
                 >
                   <div className="flex items-center gap-3 truncate max-w-[85%]">
-                    <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-cyan-400' : 'text-slate-500/50'}`} />
                     <div className="flex flex-col items-start truncate">
                       <span className="truncate w-full text-left">{chat.title}</span>
-                      <span className="text-[10px] text-gray-400">{formatDaysAgo(chat.updatedAt)}</span>
+                      <span className={`text-[10px] font-medium mt-0.5 ${currentChatId === chat.id ? 'text-cyan-400/70' : 'text-slate-500/70'}`}>{formatDaysAgo(chat.updatedAt)}</span>
                     </div>
                   </div>
                 </button>
@@ -754,7 +725,7 @@ export default function App() {
                       setCurrentChatId(null);
                     }
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                   title="Eliminar chat"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -763,12 +734,12 @@ export default function App() {
             ))}
           </div>
 
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-black/5">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs ring-1 ring-blue-200">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 font-bold text-xs ring-1 ring-cyan-500/30">
                 MN
               </div>
-              <div className="text-sm font-medium text-gray-700">Multillantas Nieto</div>
+              <div className="text-sm font-semibold text-slate-800">Multillantas Nieto</div>
             </div>
           </div>
         </div>
@@ -779,10 +750,10 @@ export default function App() {
         <div className="absolute top-4 left-4 z-50 flex items-center gap-2">
           {!isSidebarOpen && (
             <>
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm rounded-md transition-colors flex items-center justify-center hidden md:flex" title="Abrir barra lateral">
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2.5 text-slate-500 hover:text-cyan-600 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 shadow-sm hover:shadow-md rounded-xl transition-all hidden md:flex" title="Abrir barra lateral">
                 <PanelLeft className="w-5 h-5" />
               </button>
-              <button onClick={handleNewChat} className="p-2 text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm rounded-md transition-colors flex items-center justify-center hidden md:flex" title="Nuevo chat">
+              <button onClick={handleNewChat} className="p-2.5 text-slate-500 hover:text-cyan-600 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 shadow-sm hover:shadow-md rounded-xl transition-all hidden md:flex" title="Nuevo chat">
                 <Plus className="w-5 h-5" />
               </button>
             </>
@@ -804,47 +775,48 @@ export default function App() {
                   <div key={msg.id} className="flex gap-5 animate-in slide-in-from-bottom-2 duration-300">
                     <div className="flex-shrink-0 mt-1">
                       {msg.role === 'user' ? (
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shadow-sm border border-gray-200">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white shadow-[0_0_15px_rgba(34,211,238,0.3)] border border-cyan-400/30">
                           <User className="w-5 h-5" />
                         </div>
                       ) : (
                         <div className="flex items-center gap-6 -ml-1">
                           <div className="w-14 h-14 flex items-center justify-center">
-                            <BmoFace emotion={idx === messages.length - 1 ? emotion : 'idle'} size="small" />
+                            <OrbisFace emotion={idx === messages.length - 1 ? emotion : 'idle'} size="small" />
                           </div>
                           {idx === messages.length - 1 && isLoading && (
-                            <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
+                            <OrbisStatusBubble isLoading={isLoading} newsIndex={newsIndex} newsData={newsData} />
                           )}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex-1 max-w-[calc(100%-3rem)]">
-                      <div className={`text-base leading-7 ${msg.isError ? 'text-red-700' : 'text-gray-800'}`}>
-                        {msg.role === 'assistant' && !msg.isError ? (
-                          <div className="prose prose-sm md:prose-base prose-slate max-w-none">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
-                          </div>
-                        ) : (
-                          <span className="whitespace-pre-wrap">{msg.content}</span>
-                        )}
-
-                        {msg.role === 'assistant' && msg.registros && msg.registros.length === 0 && !msg.isError && (
-                          <span className="block mt-2 text-sm text-gray-500 italic">No encontré información sobre esto en la base de datos de Nieto.</span>
-                        )}
+                    <div className={`flex-1 space-y-3 max-w-full overflow-hidden ${msg.role === 'user' ? 'pt-1.5' : 'glass-card p-5'}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="flex items-center gap-2 mb-3 border-b border-black/5 pb-2">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 glow-text">
+                            ORBIS System
+                          </span>
+                        </div>
+                      )}
+                      <div className={`prose  prose-sm md:prose-base max-w-none leading-relaxed ${msg.role === 'user' ? 'text-slate-800 text-lg font-medium pl-2' : 'text-slate-700'} ${msg.isError ? 'text-red-400 bg-red-400/5 p-4 rounded-2xl border border-red-400/20' : ''}`}>
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
+
+                      {msg.role === 'assistant' && msg.registros && msg.registros.length === 0 && !msg.isError && (
+                        <span className="block mt-2 text-xs text-slate-500 italic">No encontré información sobre esto en la base de datos de Nieto.</span>
+                      )}
 
                       {msg.role === 'assistant' && msg.sql && msg.registros?.length > 0 && (
                         <MessageDataViewer registros={msg.registros} tiempos={msg.tiempos} sql_query={msg.sql} total_registros={msg.total_registros} />
                       )}
 
                       {msg.role === 'assistant' && msg.sugerencias && msg.sugerencias.length > 0 && !msg.isError && (
-                        <div className="mt-4 flex flex-wrap gap-2 animate-in slide-in-from-bottom-2">
+                        <div className="mt-6 flex flex-wrap gap-2 animate-in slide-in-from-bottom-2">
                           {msg.sugerencias.map((sug, i) => (
                             <button
                               key={i}
-                              onClick={() => setInput(sug)}
-                              className="px-4 py-2 text-[13px] font-medium text-blue-700 bg-[#eff6ff] hover:bg-[#dbeafe] rounded-xl border border-[#bfdbfe] transition-all text-left shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                              onClick={() => handleSubmit(null, sug)}
+                              className="px-4 py-2.5 text-[12px] font-semibold text-cyan-400 bg-black/5 hover:bg-black/10 rounded-xl border border-black/10 transition-all text-left shadow-sm hover:shadow-lg hover:-translate-y-0.5"
                             >
                               {sug}
                             </button>
@@ -859,9 +831,9 @@ export default function App() {
                     <div className="flex-shrink-0 mt-1">
                       <div className="flex items-center gap-6 -ml-1">
                         <div className="w-14 h-14 flex items-center justify-center">
-                          <BmoFace emotion={emotion} size="small" />
+                          <OrbisFace emotion={emotion} size="small" />
                         </div>
-                        <BmoStatusBubble isLoading={isLoading} newsIndex={newsIndex} />
+                        <OrbisStatusBubble isLoading={isLoading} newsIndex={newsIndex} newsData={newsData} />
                       </div>
                     </div>
                   </div>
