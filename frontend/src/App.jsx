@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2, Download, BarChart2, Table, ImagePlus, Square } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
+import { Plus, PanelLeft, MessageSquare, Send, Zap, Bot, Database, Code, Shield, Brain, Globe, ChevronDown, Paperclip, ArrowUp, FileUp, HardDrive, Image as ImageIcon, Laptop, FileText, Check, User, Trash2, Download, BarChart2, Table, ImagePlus, Square, FileSpreadsheet, FileImage, FileCode, File as FileIcon, Mic, MicOff, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 
@@ -279,6 +280,45 @@ const OrbisFace = ({ emotion, size = 'large' }) => {
   );
 };
 
+const AttachmentPill = ({ filePath }) => {
+  const filename = filePath.split(/[/\\]/).pop();
+  const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+  
+  let Icon = FileIcon;
+  let bgColor = "bg-slate-100";
+  let textColor = "text-slate-700";
+  let borderColor = "border-slate-200";
+  
+  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) {
+    Icon = FileSpreadsheet;
+    bgColor = "bg-emerald-50";
+    textColor = "text-emerald-700";
+    borderColor = "border-emerald-200";
+  } else if (['doc', 'docx', 'txt', 'pdf', 'odt'].includes(ext)) {
+    Icon = FileText;
+    bgColor = "bg-blue-50";
+    textColor = "text-blue-700";
+    borderColor = "border-blue-200";
+  } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+    Icon = FileImage;
+    bgColor = "bg-purple-50";
+    textColor = "text-purple-700";
+    borderColor = "border-purple-200";
+  } else if (['xml', 'json', 'html', 'js', 'py', 'css'].includes(ext)) {
+    Icon = FileCode;
+    bgColor = "bg-orange-50";
+    textColor = "text-orange-700";
+    borderColor = "border-orange-200";
+  }
+  
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-sm w-max ${bgColor} ${textColor} ${borderColor} hover:shadow-md transition-all`}>
+      <Icon className="w-4 h-4" />
+      <span className="text-xs font-semibold">{filename}</span>
+    </div>
+  );
+};
+
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -288,6 +328,8 @@ export default function App() {
 
   const [emotion, setEmotion] = useState('idle');
   const typingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [attachedFiles, setAttachedFiles] = useState([]);
 
   const [showHerramientas, setShowHerramientas] = useState(false);
   const [showModelos, setShowModelos] = useState(false);
@@ -296,6 +338,12 @@ export default function App() {
   const [modeloActual, setModeloActual] = useState('Razonamiento');
   const [newsIndex, setNewsIndex] = useState(0);
   const [newsData, setNewsData] = useState(DEFAULT_NEWS);
+  
+  // --- Voice Recording ---
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -393,6 +441,63 @@ export default function App() {
     });
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await handleTranscription(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error al acceder al micrófono:", err);
+      alert("No se pudo acceder al micrófono. Por favor verifica los permisos.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleTranscription = async (blob) => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', blob, 'voice.webm');
+
+      const response = await fetch('http://localhost:8000/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Falla en la transcripción");
+
+      const data = await response.json();
+      if (data.text) {
+        // Ejecutar consulta automáticamente con el texto transcrito
+        handleSubmit(null, data.text);
+      }
+    } catch (err) {
+      console.error("Error transcribiendo:", err);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const handleNewChat = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -402,6 +507,7 @@ export default function App() {
     setEmotion('idle');
     setIsLoading(false);
     setInput('');
+    setAttachedFiles([]);
   };
 
   const handleInputChange = (e) => {
@@ -423,10 +529,41 @@ export default function App() {
     if (e?.preventDefault) e.preventDefault();
     
     const textToSubmit = directText || input;
-    if (!textToSubmit.trim() || isLoading) return;
+    if (!textToSubmit.trim() && attachedFiles.length === 0 || isLoading) return;
 
-    const userMessage = textToSubmit.trim();
+    setIsLoading(true);
+    setEmotion('thinking');
+    
+    let uploadedPaths = [];
+    if (attachedFiles.length > 0) {
+      const formData = new FormData();
+      attachedFiles.forEach(fileObj => {
+        formData.append('files', fileObj.file);
+      });
+      
+      try {
+        const uploadResp = await fetch('http://localhost:8000/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (uploadResp.ok) {
+          const uploadData = await uploadResp.json();
+          uploadedPaths = uploadData.archivos_guardados || [];
+        }
+      } catch (err) {
+        console.error("Error subiendo archivos:", err);
+      }
+    }
+
+    let userMessage = textToSubmit.trim();
+    if (uploadedPaths.length > 0) {
+      userMessage += `\n[ARCHIVOS ADJUNTOS POR EL USUARIO: ${uploadedPaths.join(', ')}]`;
+    }
+    
+    if (!userMessage) userMessage = "Archivos adjuntos enviados.";
+
     if (!directText) setInput('');
+    setAttachedFiles([]);
 
     const newMessages = [...messages, { id: Date.now(), role: 'user', content: userMessage }];
     setMessages(newMessages);
@@ -474,13 +611,26 @@ export default function App() {
       let parsedContent = data.mensaje || "Respuesta procesada exitosamente.";
       let extractedSugerencias = data.sugerencias || [];
 
+      // Parsear json_datos si la IA generó la tabla para graficar
+      let extraRegistros = [];
+      const jsonRegex = /```json_datos\n([\s\S]*?)```/;
+      const match = jsonRegex.exec(parsedContent);
+      if (match) {
+        try {
+          extraRegistros = JSON.parse(match[1]);
+          parsedContent = parsedContent.replace(match[0], '').trim();
+        } catch (e) {
+          console.error("Error parseando json_datos:", e);
+        }
+      }
+
       // Extraer sugerencias si la IA las mandó en formato de texto Markdown
       const lines = parsedContent.split('\n');
       const cleanLines = [];
       lines.forEach(line => {
-        const match = line.match(/^\s*(?:\*\*)?SUGERENCIA:(?:\*\*)?\s*(.*)/i);
-        if (match) {
-          let sugText = match[1].trim();
+        const matchSug = line.match(/^\s*(?:\*\*)?SUGERENCIA:(?:\*\*)?\s*(.*)/i);
+        if (matchSug) {
+          let sugText = matchSug[1].trim();
           sugText = sugText.replace(/^["*]+|["*]+$/g, '').trim(); // Limpiar comillas o asteriscos
           if (sugText) extractedSugerencias.push(sugText);
         } else {
@@ -489,6 +639,8 @@ export default function App() {
       });
       
       parsedContent = cleanLines.join('\n').trim();
+      
+      const finalRegistros = (data.datos && data.datos.length > 0) ? data.datos : extraRegistros;
 
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
@@ -496,9 +648,9 @@ export default function App() {
         content: parsedContent,
         sugerencias: extractedSugerencias,
         sql: data.sql_generado,
-        registros: data.datos,
+        registros: finalRegistros,
         tiempos: data.tiempos,
-        total_registros: data.total_registros,
+        total_registros: data.total_registros || finalRegistros.length,
         isError: false
       }]);
 
@@ -543,6 +695,24 @@ export default function App() {
     { key: 'Ultra', label: 'Multillantas AI Ultra', desc: 'Acceso corporativo ilimitado a BD' },
   ];
 
+  const handleHerramientaClick = (label) => {
+    if (label === 'Subir archivos' || label === 'Fotos') {
+      fileInputRef.current?.click();
+    } else if (label === 'Añadir desde Drive') {
+      alert("La integración con Google Drive está en desarrollo para futuras versiones.");
+    }
+    setShowHerramientas(false);
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files).map(f => ({ name: f.name, file: f }));
+      setAttachedFiles(prev => [...prev, ...newFiles]);
+    }
+    // Limpiar el input para permitir volver a seleccionar el mismo archivo
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const renderOrbisHUD = (isCentered = true) => (
     <div className={`flex flex-col items-center justify-center transition-all duration-700 ${isCentered ? 'mb-12' : 'scale-90 opacity-90'}`}>
       <div className="flex items-center gap-6 relative">
@@ -569,7 +739,29 @@ export default function App() {
 
       <div className="glass-input p-2.5 w-full relative">
 
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 pl-6 pr-4 pt-3 pb-1">
+            {attachedFiles.map((file, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 bg-cyan-500/10 text-cyan-600 px-3 py-1.5 rounded-full text-xs font-medium border border-cyan-500/20">
+                <Paperclip className="w-3 h-3" />
+                <span className="truncate max-w-[150px]">{file.name}</span>
+                <button onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))} className="hover:text-red-500 ml-1">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="px-2 pt-1 pb-2">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+            multiple 
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv" 
+          />
           <textarea
             value={input}
             onChange={handleInputChange}
@@ -600,7 +792,11 @@ export default function App() {
               {showHerramientas && (
                 <div className={`absolute left-0 mb-3 w-56 bg-white/90 backdrop-blur-2xl border border-black/10 rounded-2xl shadow-2xl overflow-hidden py-2 z-50 animate-in fade-in bottom-full slide-in-from-bottom-2`}>
                   {menuHerramientas.map((item, i) => (
-                    <button key={i} className="w-full text-left px-5 py-2.5 text-sm text-slate-700 hover:bg-black/5 flex items-center gap-3 transition-colors">
+                    <button 
+                      key={i} 
+                      onClick={() => handleHerramientaClick(item.label)}
+                      className="w-full text-left px-5 py-2.5 text-sm text-slate-700 hover:bg-black/5 flex items-center gap-3 transition-colors"
+                    >
                       <span className="text-slate-600">{item.icon}</span>
                       {item.label}
                     </button>
@@ -608,6 +804,27 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`flex items-center justify-center p-3 rounded-full transition-all 
+                ${isRecording 
+                  ? 'bg-red-500/20 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                  : isTranscribing 
+                    ? 'bg-cyan-500/10 text-cyan-400' 
+                    : 'text-slate-600 hover:bg-black/5 hover:text-cyan-300'}`}
+              title={isRecording ? "Detener grabación" : "Dictado por voz"}
+              disabled={isLoading || isTranscribing}
+            >
+              {isTranscribing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isRecording ? (
+                <MicOff className="w-5 h-5 animate-pulse" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </button>
 
             <button
               type="button"
@@ -798,15 +1015,35 @@ export default function App() {
                           </span>
                         </div>
                       )}
-                      <div className={`prose  prose-sm md:prose-base max-w-none leading-relaxed ${msg.role === 'user' ? 'text-slate-800 text-lg font-medium pl-2' : 'text-slate-700'} ${msg.isError ? 'text-red-400 bg-red-400/5 p-4 rounded-2xl border border-red-400/20' : ''}`}>
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <div className="flex-1 w-full max-w-full min-w-0">
+                        <div className={`prose  prose-sm md:prose-base max-w-none leading-relaxed ${msg.role === 'user' ? 'text-slate-800 text-lg font-medium pl-2' : 'text-slate-700'} ${msg.isError ? 'text-red-400 bg-red-400/5 p-4 rounded-2xl border border-red-400/20' : ''}`}>
+                          {(() => {
+                            if (msg.role === 'user') {
+                              const attachmentRegex = /\[ARCHIVOS ADJUNTOS POR EL USUARIO:\s*(.*?)\]/g;
+                              const match = attachmentRegex.exec(msg.content);
+                              if (match) {
+                                const cleanContent = msg.content.replace(match[0], '').trim();
+                                const files = match[1].split(',').map(f => f.trim());
+                                return (
+                                  <>
+                                    {cleanContent && <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanContent}</ReactMarkdown>}
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                      {files.map((file, idx) => <AttachmentPill key={idx} filePath={file} />)}
+                                    </div>
+                                  </>
+                                );
+                              }
+                            }
+                            return <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>;
+                          })()}
+                        </div>
                       </div>
 
                       {msg.role === 'assistant' && msg.registros && msg.registros.length === 0 && !msg.isError && (
-                        <span className="block mt-2 text-xs text-slate-500 italic">No encontré información sobre esto en la base de datos de Nieto.</span>
+                        <span className="block mt-2 text-xs text-slate-500 italic">No se encontraron resultados que coincidan con la búsqueda.</span>
                       )}
 
-                      {msg.role === 'assistant' && msg.sql && msg.registros?.length > 0 && (
+                      {msg.role === 'assistant' && msg.registros?.length > 0 && (
                         <MessageDataViewer registros={msg.registros} tiempos={msg.tiempos} sql_query={msg.sql} total_registros={msg.total_registros} />
                       )}
 

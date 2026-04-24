@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 import feedparser
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,11 +6,56 @@ from typing import List, Dict, Any, Optional
 from fastapi.responses import StreamingResponse
 import io
 import time
+import os
+import shutil
 
 from agent import generar_sql
 from database import ejecutar_query_sql
+import whisper
+import tempfile
+
+# --- Autodetectar FFmpeg en Windows (Self-Healing) ---
+if os.name == 'nt':
+    import shutil
+    if not shutil.which("ffmpeg"):
+        # Intentar buscar en rutas comunes de WinGet
+        posibles_rutas = [
+            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages"),
+        ]
+        for base in posibles_rutas:
+            if os.path.exists(base):
+                # Buscar carpetas que contengan ffmpeg
+                for folder in os.listdir(base):
+                    if "ffmpeg" in folder.lower():
+                        bin_path = os.path.join(base, folder, "ffmpeg-8.1-full_build", "bin")
+                        if not os.path.exists(bin_path): # Caso alternativo de estructura
+                             bin_path = os.path.join(base, folder, "bin")
+                        
+                        # Si encontramos el binario, lo agregamos al PATH de la sesión
+                        if os.path.exists(os.path.join(bin_path, "ffmpeg.exe")):
+                            os.environ["PATH"] += os.pathsep + bin_path
+                            print(f"🚀 FFmpeg detectado y activado automáticamente en: {bin_path}")
+                            break
+
+# Cargar modelo Whisper (esto puede tardar unos segundos al iniciar el server)
+print("Cargando modelo Whisper 'base'...")
+model_whisper = whisper.load_model("base")
+print("Modelo Whisper cargado.")
 
 app = FastAPI(title="Backend IA Nieto")
+
+UPLOAD_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/api/upload")
+async def upload_files(files: List[UploadFile] = File(...)):
+    saved_files = []
+    for file in files:
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        saved_files.append(file_path)
+    return {"status": "success", "archivos_guardados": saved_files}
 
 app.add_middleware(
     CORSMiddleware,
@@ -160,6 +205,52 @@ def procesar_chat(request: ChatRequest):
         traceback.print_exc()
         print("-" * 50)
         raise HTTPException(status_code=500, detail=f"Falla Interna: {str(e)}")
+
+@app.post("/api/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Recibe un archivo de audio, lo transcribe usando Whisper y devuelve el texto.
+    El archivo se maneja de forma efímera para privacidad.
+    """
+    tmp_path = None
+    print(f"🎤 Recibiendo audio: {audio.filename} ({audio.content_type})")
+    try:
+        # Crear un archivo temporal con sufijo apropiado
+        suffix = ".webm"
+        if audio.filename:
+            _, ext = os.path.splitext(audio.filename)
+            if ext: suffix = ext
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            shutil.copyfileobj(audio.file, tmp)
+            tmp_path = tmp.name
+        
+        print(f"📁 Audio guardado temporalmente en: {tmp_path}")
+
+        # Transcribir usando el modelo cargado
+        start_t = time.time()
+        result = model_whisper.transcribe(tmp_path, language="es")
+        end_t = time.time()
+        
+        transcripcion = result["text"].strip()
+        print(f"✅ Transcripción exitosa en {round(end_t - start_t, 2)}s: '{transcripcion}'")
+        
+        return {"text": transcripcion}
+    
+    except Exception as e:
+        print(f"❌ Error en /api/transcribe: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    finally:
+        # Limpieza absoluta del archivo temporal
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+                print(f"🗑️ Archivo temporal eliminado: {tmp_path}")
+            except Exception as e_rem:
+                print(f"⚠️ No se pudo eliminar el temporal: {e_rem}")
 
 class ExportRequest(BaseModel):
     query: str

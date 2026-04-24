@@ -13,6 +13,28 @@ def get_connection():
         port=os.getenv("DB_PORT"),
         dbname=os.getenv("DB_NAME")
     )
+    
+def init_db():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION orbis_safe_numeric(val text) RETURNS numeric AS $$
+            BEGIN
+                RETURN CAST(val AS numeric);
+            EXCEPTION WHEN invalid_text_representation THEN
+                RETURN NULL;
+            END;
+            $$ LANGUAGE plpgsql;
+        """)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error inicializando DB: {e}")
+
+# Ejecutar al cargar el módulo
+init_db()
 
 def obtener_esquema_bd() -> str:
     """Extrae dinámicamente el esquema de la base de datos public."""
