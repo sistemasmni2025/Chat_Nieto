@@ -38,9 +38,9 @@ if os.name == 'nt':
                             break
 
 # Cargar modelo Whisper (esto puede tardar unos segundos al iniciar el server)
-print("Cargando modelo Whisper 'base'...")
-model_whisper = whisper.load_model("base")
-print("Modelo Whisper cargado.")
+print("Cargando modelo Whisper 'base' en CPU para ahorrar VRAM...")
+model_whisper = whisper.load_model("base", device="cpu")
+print("Modelo Whisper cargado en CPU.")
 
 app = FastAPI(title="Backend IA Nieto")
 

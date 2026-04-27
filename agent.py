@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import re
 from dotenv import load_dotenv
 from database import ejecutar_query_sql, obtener_esquema_bd
 from skills import analizar_archivo_datos
@@ -10,9 +11,10 @@ load_dotenv()
 def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str = "Razonamiento", error_previo: str = None) -> dict:
     
     ollama_host = os.getenv("OLLAMA_HOST", "http://172.16.71.208:11434")
-    modelo_real = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+    modelo_real = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
     
-    temperatura = 0.0 if modelo_elegido in ["Razonamiento", "Ultra"] else 0.7
+    # Forzamos temperatura 0.0 para máxima precisión en herramientas
+    temperatura = 0.0
     
     system_prompt = f"""
 # ROLE: ORBIS - Tu Asistente de Multillantas Nieto (PostgreSQL Experto)
@@ -32,21 +34,27 @@ def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str 
 2. JOINS PRINCIPALES:
    - Ventas con Producto: `fact_ventas.producto_id = producto.id`
    - Ventas con Sucursal: `fact_ventas.sucursal_id = sucursales.id`
-   - Producto con Marca: `producto.grupo_id = grupos.id` -> `grupos.marca_id = dim_marca.id`
 3. Si te piden ventas por marca, debes hacer el camino: `fact_ventas` -> `producto` -> `grupos` -> `dim_marca`.
 
 # SKILLS Y ARCHIVOS (ALL-IN-ONE):
-- Si el mensaje del usuario incluye rutas de archivos (ej. [ARCHIVOS ADJUNTOS POR EL USUARIO: C:/...]), DEBES usar tu herramienta `analizar_archivo` pasando esa ruta exacta para extraer el contenido del archivo y responder lo que te pidan sobre él. NO intentes adivinar el contenido.
+- Si el mensaje incluye rutas de archivos (ej. [ARCHIVOS ADJUNTOS...]), DEBES usar `analizar_archivo`. 
+- Si el usuario menciona una PESTAÑA o HOJA específica del Excel (ej: "consulta la hoja BD"), DEBES pasar ese nombre al parámetro `hoja` de la herramienta.
 
-# REGLAS DE RESPUESTA Y SUGERENCIAS:
-0. PRESENTACIÓN: Si es el primer mensaje del usuario, empieza con una breve bienvenida ("¡Hola! Soy ORBIS..."). SIN EMBARGO, si el usuario te pide analizar un archivo o hacer una consulta en ese primer mensaje, DEBES darle la respuesta o reporte inmediatamente después de la bienvenida en el mismo mensaje. No te quedes solo en el saludo.
-1. Responde siempre con tablas Markdown y un resumen ejecutivo amigable. Si el usuario te pide un "reporte en Excel" o "exportar", ignora tu incapacidad de crear archivos Excel: TÚ SOLO usa tu herramienta SQL para obtener los datos. El sistema se encargará de darle un botón de descarga en Excel al usuario automáticamente.
-2. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para que el usuario siga explorando los datos.
-3. IMPORTANTE: No escribas "Pregunta 1", "Pregunta 2"... Escribe la pregunta real.
-FORMATO EXACTO AL FINAL:
-SUGERENCIA: ¿Cuál es el producto más vendido en la sucursal de León?
-SUGERENCIA: Muestra el top 5 de clientes con mayor importe de compra.
-SUGERENCIA: ¿Cuál es el margen promedio por marca?
+# REGLAS DE RESPUESTA:
+- Responde siempre con tablas Markdown y un resumen ejecutivo detallado.
+- Si el usuario pide algo "de todo el año", no limites el resultado a una sola fila, muestra un desglose útil.
+- OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para seguir explorando.
+- CADA sugerencia DEBE empezar con `SUGERENCIA:` seguida de la pregunta.
+- NO uses listas numeradas (1, 2, 3) para las sugerencias.
+- FORMATO EXACTO AL FINAL:
+SUGERENCIA: ¿Cuál es el producto más vendido?
+SUGERENCIA: Muestra el top 5 de clientes.
+SUGERENCIA: ¿Cuál es el margen promedio?
+
+# INSTRUCCIONES DE HERRAMIENTAS (CRÍTICO):
+- Eres un Agente Autónomo. LLAMA A LA HERRAMIENTA DE INMEDIATO si necesitas datos.
+- NO expliques lo que vas a hacer.
+- Tu mensaje de llamada a herramienta debe ser ÚNICAMENTE el JSON.
 """
 
     if error_previo:
@@ -61,8 +69,6 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
                 content = content[:2000] + " ... [Truncado]"
             mensajes_ollama.append({"role": msg.get("role", "user"), "content": content})
             
-    import re
-    from skills import analizar_archivo_datos
     archivos_adjuntos = re.findall(r'\[ARCHIVOS ADJUNTOS POR EL USUARIO: (.*?)\]', texto_usuario)
     
     if archivos_adjuntos:
@@ -70,12 +76,16 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
         contenido_extraido = ""
         for ruta in rutas:
             ruta = ruta.strip()
-            contenido = analizar_archivo_datos(ruta)
+            hoja_pedida = None
+            match_hoja = re.search(r'(?:hoja|pestaña|pestana)\s+([a-zA-Z0-9_\-\s]+)', texto_usuario, re.I)
+            if match_hoja:
+                hoja_pedida = match_hoja.group(1).strip()
+            
+            contenido = analizar_archivo_datos(ruta, hoja=hoja_pedida)
             contenido_extraido += f"\n\n--- ARCHIVO: {ruta} ---\n{contenido}"
             
         texto_usuario_limpio = re.sub(r'\[ARCHIVOS ADJUNTOS POR EL USUARIO: (.*?)\]', '', texto_usuario).strip()
-        
-        texto_usuario = f"[DATOS DEL ARCHIVO ADJUNTO:\n{contenido_extraido}]\n\n--- FIN DE DATOS ---\n\nPREGUNTA DEL USUARIO A RESPONDER OBLIGATORIAMENTE AHORA MISMO:\n\"{texto_usuario_limpio}\""
+        texto_usuario = f"[DATOS DEL ARCHIVO ADJUNTO:\n{contenido_extraido}]\n\nPREGUNTA:\n\"{texto_usuario_limpio}\""
 
     mensajes_ollama.append({"role": "user", "content": texto_usuario})
 
@@ -91,14 +101,11 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
                 "type": "function",
                 "function": {
                     "name": "consultar_base_datos",
-                    "description": "Filtra, busca y extrae información sobre Multillantas Nieto usando PostgreSQL",
+                    "description": "Filtra y extrae información sobre Multillantas Nieto usando PostgreSQL",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "sql_query": {
-                                "type": "string",
-                                "description": "El query SQL puro, en postgresql usando comillas dobles."
-                            }
+                            "sql_query": { "type": "string", "description": "Query SQL puro." }
                         },
                         "required": ["sql_query"]
                     }
@@ -108,14 +115,12 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
                 "type": "function",
                 "function": {
                     "name": "analizar_archivo",
-                    "description": "Lee y extrae contenido de archivos Excel, CSV, PDF, Word o Texto locales subidos por el usuario.",
+                    "description": "Lee archivos Excel, CSV. Soporta selección de hojas.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "ruta_archivo": {
-                                "type": "string",
-                                "description": "La ruta exacta del archivo proporcionada por el usuario (generalmente en la etiqueta de adjuntos)."
-                            }
+                            "ruta_archivo": { "type": "string", "description": "Ruta." },
+                            "hoja": { "type": "string", "description": "Nombre de hoja." }
                         },
                         "required": ["ruta_archivo"]
                     }
@@ -125,20 +130,42 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
     }
     
     try:
-        resp = requests.post(url, json=payload, timeout=180)
+        resp = requests.post(url, json=payload, timeout=300)
         resp.raise_for_status()
         resultado = resp.json()
         message = resultado.get("message", {})
         
-        # Inicia lógica de recursión simulada (OpenWebUI Loop)
         max_intentos = 2
         intento = 0
         
-        while "tool_calls" in message and len(message["tool_calls"]) > 0 and intento < max_intentos:
+        while (("tool_calls" in message and len(message["tool_calls"]) > 0) or 
+               ('{' in message.get("content", "") and '"name":' in message.get("content", ""))) and intento < max_intentos:
             intento += 1
-            tool = message["tool_calls"][0]
-            args = tool.get("function", {}).get("arguments", {})
             
+            tool = None
+            if "tool_calls" in message and len(message["tool_calls"]) > 0:
+                tool = message["tool_calls"][0]
+            else:
+                content = message.get("content", "")
+                json_match = re.search(r'(\{.*?"name":.*?\})', content, re.DOTALL)
+                if json_match:
+                    try:
+                        raw_json = json_match.group(1)
+                        parsed = json.loads(raw_json)
+                        tool = {
+                            "function": {
+                                "name": parsed.get("name"),
+                                "arguments": parsed.get("parameters") or parsed.get("arguments")
+                            }
+                        }
+                    except: pass
+            
+            if not tool: break
+
+            # BORRAR contenido explicativo antes de llamar a la herramienta
+            message["content"] = "" 
+            
+            args = tool.get("function", {}).get("arguments", {})
             if isinstance(args, str):
                 try: args = json.loads(args)
                 except: pass
@@ -148,73 +175,49 @@ SUGERENCIA: ¿Cuál es el margen promedio por marca?
             query_sql = ""
             
             if nombre_tool == "consultar_base_datos":
-                if isinstance(args, dict):
-                    query_sql = args.get("sql_query", "").strip()
-                
+                query_sql = args.get("sql_query", "").strip()
                 if not query_sql:
-                    res_str = "ERROR: No se proporcionó un query SQL válido."
+                    res_str = "ERROR: No SQL."
                 else:
                     try:
                         df = ejecutar_query_sql(query_sql)
                         datos_ia = df.head(15).to_dicts() if df.shape[0] > 0 else []
-                        res_str = f"RESULTADO ({df.shape[0]} registros totales, aquí los primeros 15): {str(datos_ia)}"
+                        res_str = f"RESULTADO ({df.shape[0]} registros): {str(datos_ia)}"
                     except Exception as e_sql:
-                        res_str = f"ERROR DE POSTGRESQL: {str(e_sql)}. ¡Asegúrate de haber usado las comillas dobles correctas y las tablas que existen!"
+                        res_str = f"ERROR SQL: {str(e_sql)}"
             
             elif nombre_tool == "analizar_archivo":
-                ruta = ""
-                if isinstance(args, dict):
-                    ruta = args.get("ruta_archivo", "").strip()
-                
-                if not ruta:
-                    res_str = "ERROR: No se proporcionó la ruta del archivo."
-                else:
-                    res_str = analizar_archivo_datos(ruta, texto_usuario)
+                ruta = args.get("ruta_archivo", "").strip()
+                hoja = args.get("hoja", "").strip() or None
+                res_str = analizar_archivo_datos(ruta, hoja=hoja)
             
-            else:
-                res_str = f"ERROR: Herramienta desconocida {nombre_tool}"
-            
-            # Guardamos para el retorno final si el loop termina aquí
             sql_final_provisional = query_sql if nombre_tool == "consultar_base_datos" else None
-            res_str_provisional = res_str
-                
-            # Agregamos la petición de herramienta y su resultado al contexto
             mensajes_ollama.append(message)
-            mensajes_ollama.append({
-                "role": "tool",
-                "content": res_str,
-                "name": nombre_tool
-            })
+            mensajes_ollama.append({"role": "tool", "content": res_str, "name": nombre_tool})
             
-            # Si hubo error, dejamos que la IA re-intente su herramienta,
-            # Si no hubo error, la IA usará los datos para dar la respuesta final.
             payload_siguiente = {
                 "model": modelo_real,
                 "messages": mensajes_ollama,
                 "stream": False,
-                "options": { "temperature": 0.5 }
+                "options": { "temperature": 0.0 }
             }
+            resp2 = requests.post(url, json=payload_siguiente, timeout=300)
+            message = resp2.json().get("message", {})
             
-            resp2 = requests.post(url, json=payload_siguiente, timeout=180)
-            resultado2 = resp2.json()
-            message = resultado2.get("message", {})
-            
-            # El "while" se repite si message tiene "tool_calls" de nuevo (si falló y re-intentó).
-            # Si no, significa que la IA ya escribió la respuesta en Markdown de los datos finales!
-            
-        # Cuando escape del ciclo while (o porque ya es texto o por max_intentos):
         texto_final = message.get("content", "Procesado.").strip()
         
-        # Determinamos si logró o no generar un SQL final
-        has_sql = intento > 0 and "sql_final_provisional" in locals() and bool(sql_final_provisional)
-        tipo = "sql" if has_sql else "chat"
-        sql_final = sql_final_provisional if has_sql else ""
+        # LIMPIADOR: Solo eliminamos el bloque JSON del nombre de la herramienta, NO el resto del texto.
+        texto_final = re.sub(r'\{.*?"name":.*?\}', '', texto_final, flags=re.DOTALL).strip()
+        texto_final = re.sub(r'```json.*?```', '', texto_final, flags=re.DOTALL).strip()
         
+        has_sql = intento > 0 and "sql_final_provisional" in locals() and bool(sql_final_provisional)
         return {
-            "tipo": tipo,
+            "tipo": "sql" if has_sql else "chat",
             "mensaje": texto_final,
-            "query": sql_final
+            "query": sql_final_provisional if has_sql else ""
         }
             
     except Exception as e:
-        raise Exception(f"Falla crítica Ollama Agent: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise Exception(f"Falla crítica: {str(e)}")
