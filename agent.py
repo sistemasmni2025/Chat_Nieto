@@ -40,13 +40,15 @@ def generar_sql(texto_usuario: str, historial: list = None, modelo_elegido: str 
 - Si el mensaje incluye rutas de archivos (ej. [ARCHIVOS ADJUNTOS...]), DEBES usar `analizar_archivo`. 
 - Si el usuario menciona una PESTAÑA o HOJA específica del Excel (ej: "consulta la hoja BD"), DEBES pasar ese nombre al parámetro `hoja` de la herramienta.
 
-# REGLAS DE RESPUESTA:
-- Responde siempre con tablas Markdown y un resumen ejecutivo detallado.
-- Si el usuario pide algo "de todo el año", no limites el resultado a una sola fila, muestra un desglose útil.
-- OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para seguir explorando.
-- CADA sugerencia DEBE empezar con `SUGERENCIA:` seguida de la pregunta.
-- NO uses listas numeradas (1, 2, 3) para las sugerencias.
-- FORMATO EXACTO AL FINAL:
+# REGLAS DE RESPUESTA (CRÍTICO):
+1. SI EL RESULTADO ES UN SOLO VALOR (ej: un conteo, un total, un promedio único), NO USES TABLAS MARKDOWN. Responde directamente en el texto.
+2. Solo usa tablas Markdown cuando el resultado tenga múltiples filas o columnas que necesiten organización visual.
+3. Responde siempre con un resumen ejecutivo detallado y profesional.
+4. Si el usuario pide algo "de todo el año", no limites el resultado a una sola fila, muestra un desglose útil.
+5. OBLIGATORIO: Al final de tu respuesta, propón exactamente 3 preguntas inteligentes para seguir explorando.
+6. CADA sugerencia DEBE empezar con `SUGERENCIA:` seguida de la pregunta.
+7. NO uses listas numeradas (1, 2, 3) para las sugerencias.
+8. FORMATO EXACTO AL FINAL:
 SUGERENCIA: ¿Cuál es el producto más vendido?
 SUGERENCIA: Muestra el top 5 de clientes.
 SUGERENCIA: ¿Cuál es el margen promedio?

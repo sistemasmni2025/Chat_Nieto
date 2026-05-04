@@ -13,6 +13,8 @@ from agent import generar_sql
 from database import ejecutar_query_sql
 import whisper
 import tempfile
+import edge_tts
+import asyncio
 
 # --- Autodetectar FFmpeg en Windows (Self-Healing) ---
 if os.name == 'nt':
@@ -271,6 +273,33 @@ def exportar_csv(request: ExportRequest):
             headers={"Content-Disposition": "attachment; filename=reporte_nieto_full.csv"}
         )
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tts")
+async def text_to_speech(text: str):
+    """
+    Convierte texto a audio MP3 usando la voz de Dalia (México).
+    """
+    try:
+        VOICE = "es-MX-DaliaNeural"
+        # Usar tempfile para el audio generado
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            tmp_path = tmp.name
+        
+        communicate = edge_tts.Communicate(text, VOICE)
+        await communicate.save(tmp_path)
+        
+        def iterfile():
+            with open(tmp_path, "rb") as f:
+                yield from f
+            # Intentar eliminar el archivo después de enviarlo
+            try: os.remove(tmp_path)
+            except: pass
+
+        return StreamingResponse(iterfile(), media_type="audio/mpeg")
+    
+    except Exception as e:
+        print(f"❌ Error en TTS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/news")

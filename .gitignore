@@ -10,6 +10,13 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Frontend
+# Frontend & Mobile
 frontend/node_modules/
 frontend/dist/
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+
+# Virtual Environments
+venv/
+.venv/
